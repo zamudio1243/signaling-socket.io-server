@@ -21,7 +21,8 @@
     "dist/"
   ],
   "scripts": {
-    "build": " rmdir /s /q dist && tsc",
+    "buildw": "rmdir /s /q dist && tsc",
+    "build": "rm -r dist && tsc",
     "dev": "nodemon --config nodemon.json src/index.ts",
     "start": "npm run build && node ./dist/index.js",
     "changelog": "conventional-changelog -p angular -u",
