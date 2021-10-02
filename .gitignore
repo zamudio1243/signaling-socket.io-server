@@ -1,17 +1,8 @@
-# API keys and secrets
-.env
+# Generated directories:
+.nyc_output/
+coverage/
+dist/
+node_modules/
 
-# Dependency directory
-node_modules
-
-# Editors
-.idea
-*.iml
-.vscode/settings.json
-
-# OS metadata
-.DS_Store
-Thumbs.db
-
-# Ignore built ts files
-dist/**/*
+# Project files:
+*.sublime-*

@@ -1,0 +1,16 @@
+{
+    "rootDir": "path/to/root/project",
+    "env": "development",
+    "port": 5000,
+    "debug": false,
+    "httpsPort": 8000,
+    "uploadDir": "${rootDir}/uploads",
+    "mount": {
+      "/rest": "${rootDir}/controllers/**/*.ts"
+    },
+    "componentsScan": [
+      "${rootDir}/middlewares/**/*.ts",
+      "${rootDir}/services/**/*.ts",
+      "${rootDir}/converters/**/*.ts"
+    ]
+}
