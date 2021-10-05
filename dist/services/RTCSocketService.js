@@ -47,7 +47,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RTCSocketService = void 0;
 var socketio_1 = require("@tsed/socketio");
-var lib_1 = require("../../node_modules/@tsed/logger/lib");
 var RTCSocketService = /** @class */ (function () {
     function RTCSocketService() {
         this.users = new Map();
@@ -62,7 +61,7 @@ var RTCSocketService = /** @class */ (function () {
      * Triggered when a new client connects to the Namespace.
      */
     RTCSocketService.prototype.$onConnection = function (socket, session) {
-        lib_1.$log.debug("New connection, ID =>", socket.id);
+        console.log("New connection, ID =>", socket.id);
         var user = {
             uid: socket.id
         };
@@ -82,7 +81,7 @@ var RTCSocketService = /** @class */ (function () {
     };
     RTCSocketService.prototype.joinRoom = function (name, session) {
         var user = session.get("user");
-        lib_1.$log.debug("Joinned to the room => ", name);
+        console.log("Joinned to the room => ", name);
         user.nombre = name;
         this.users.set(user.id, user);
         return this.getUsers();
