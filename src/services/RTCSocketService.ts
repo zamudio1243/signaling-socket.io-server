@@ -8,9 +8,6 @@ export class RTCSocketService{
     @Nsp nsp!: Namespace;
 
     public users: Map<string, User> = new Map<string, User> ();
-
-    public socketToRoom: any = {};
-
     /**
      * Triggered the namespace is created
      */
@@ -36,12 +33,6 @@ export class RTCSocketService{
   
     }
 
-    @Broadcast("all users")
-    async allUsers(): Promise<void>{
-
-    }
-
-
     @Input("join-room")
     @Broadcast("user-joined")
     joinRoom(
@@ -55,17 +46,11 @@ export class RTCSocketService{
       user.nombre = name;
       this.users.set(user.id, user);
 
+      console.log(this.users);
+
       return this.getUsers();
     }
     
-
-
-    @Input("input:scenario1")
-    @Broadcast("output:scenario1")
-    async scenario1() {
-      return "My message";
-    }
-
     /**
      * Retorna la lista de usuarios
      * @returns {Array}
