@@ -40,11 +40,11 @@ export class RTCSocketService{
        @SocketSession session: SocketSession
     ): User[]
        {
-      const user = session.get("user");
+      const user = session.get("user") as User;
       console.log("Joinned to the room => ", name);
 
       user.nombre = name;
-      this.users.set(user.id, user);
+      this.users.set(user.uid!, user);
 
       console.log(this.users);
 
