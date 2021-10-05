@@ -8,7 +8,7 @@ export class RTCSocketService{
 
     @Nsp nsp!: Namespace;
 
-    public users: Map<string, User> = new Map<string, User> ()
+    public users: Map<string, User> = new Map<string, User> ();
 
     public socketToRoom: any = {};
 
@@ -23,7 +23,7 @@ export class RTCSocketService{
      * Triggered when a new client connects to the Namespace.
      */
     $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
-      $log.debug("New connection, ID =>", socket.id);
+      console.log("New connection, ID =>", socket.id);
       const user: User = {
         uid: socket.id
       }
@@ -51,7 +51,7 @@ export class RTCSocketService{
     ): User[]
        {
       const user = session.get("user");
-      $log.debug("Joinned to the room => ", name);
+      console.log("Joinned to the room => ", name);
 
       user.nombre = name;
       this.users.set(user.id, user);
