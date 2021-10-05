@@ -48,7 +48,7 @@ function bootstrap() {
                     _a.trys.push([0, 3, , 4]);
                     common_1.$log.debug("Start server...");
                     return [4 /*yield*/, platform_express_1.PlatformExpress.bootstrap(server_1.Server, {
-                            port: 3000
+                            port: process.env.PORT || 3000,
                         })];
                 case 1:
                     platform = _a.sent();
