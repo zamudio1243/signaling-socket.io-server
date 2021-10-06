@@ -13,7 +13,11 @@ exports.RTCSocketService = void 0;
 var socketio_1 = require("@tsed/socketio");
 var RTCSocketService = /** @class */ (function () {
     function RTCSocketService() {
-        this.users = new Map();
+        /**
+         * ['channelVoiceID' => ['socketID' => 'uid']]
+         * @type {Map<Map<string,string}
+         */
+        this.channelVoice = new Map();
     }
     /**
      * Triggered the namespace is created
@@ -25,34 +29,32 @@ var RTCSocketService = /** @class */ (function () {
      */
     RTCSocketService.prototype.$onConnection = function (socket, session) {
         console.log("New connection, ID =>", socket.id);
-        var user = {
-            uid: socket.id
-        };
-        session.set("user", user);
+        session.set("user", socket.id);
     };
     /**
      * Triggered when a client disconnects from the Namespace.
      */
     RTCSocketService.prototype.$onDisconnect = function (socket) {
     };
-    RTCSocketService.prototype.joinRoom = function (name, session) {
-        var user = session.get("user");
-        console.log("Joinned to the room => ", name);
-        user.nombre = name;
-        this.users.set(user.id, user);
-        console.log(this.users);
-        return this.getUsers();
+    /**
+     * Agrega a un usuario a un canal de voz a través de ID del canal
+     * @param voiceChannelID ID del canal de voz a unirse
+     * @param session sesión del Socket
+     * @returns Usuarios dentro del canal de voz
+     */
+    RTCSocketService.prototype.joinRoom = function (voiceChannelID, session) {
+        var userSocketID = session.get("user");
+        var userInVoiceChannel = new Map();
+        userInVoiceChannel.set(userSocketID, 'uid');
+        this.channelVoice.set(voiceChannelID, userInVoiceChannel);
+        return this.getUsersInVoiceChannel(voiceChannelID);
     };
     /**
      * Retorna la lista de usuarios
-     * @returns {Array}
+     * @returns {Map<string,string>}
      */
-    RTCSocketService.prototype.getUsers = function () {
-        var users = [];
-        this.users.forEach(function (user) {
-            users.push(user);
-        });
-        return users;
+    RTCSocketService.prototype.getUsersInVoiceChannel = function (voiceChannelID) {
+        return this.channelVoice.get(voiceChannelID);
     };
     __decorate([
         socketio_1.Nsp
@@ -65,13 +67,13 @@ var RTCSocketService = /** @class */ (function () {
         __param(0, socketio_1.Socket)
     ], RTCSocketService.prototype, "$onDisconnect", null);
     __decorate([
-        (0, socketio_1.Input)("join-room"),
-        (0, socketio_1.Broadcast)("user-joined"),
+        (0, socketio_1.Input)("join-voice-channel"),
+        (0, socketio_1.Broadcast)("users-in-voice-channel"),
         __param(0, (0, socketio_1.Args)(0)),
         __param(1, socketio_1.SocketSession)
     ], RTCSocketService.prototype, "joinRoom", null);
     RTCSocketService = __decorate([
-        (0, socketio_1.SocketService)("/rtc")
+        (0, socketio_1.SocketService)("/channelVoice")
     ], RTCSocketService);
     return RTCSocketService;
 }());

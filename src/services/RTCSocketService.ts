@@ -1,13 +1,16 @@
 
 import {Nsp, Socket, SocketService, SocketSession, Namespace, Input,  Broadcast, Args} from "@tsed/socketio";
-import { User } from "../models/user";
 
-@SocketService("/rtc")
+@SocketService("/channelVoice")
 export class RTCSocketService{
 
     @Nsp nsp!: Namespace;
 
-    public users: Map<string, User> = new Map<string, User> ();
+    /**
+     * ['channelVoiceID' => ['socketID' => 'uid']]
+     * @type {Map<Map<string,string}
+     */
+    public channelVoice: Map<string, Map<string,string>> = new Map<string, Map<string,string>> ();
     /**
      * Triggered the namespace is created
      */
@@ -20,10 +23,7 @@ export class RTCSocketService{
      */
     $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
       console.log("New connection, ID =>", socket.id);
-      const user: User = {
-        uid: socket.id
-      }
-      session.set("user", user);
+      session.set("user", socket.id);
     }
   
     /**
@@ -33,34 +33,34 @@ export class RTCSocketService{
   
     }
 
-    @Input("join-room")
-    @Broadcast("user-joined")
+    /**
+     * Agrega a un usuario a un canal de voz a través de ID del canal 
+     * @param voiceChannelID ID del canal de voz a unirse
+     * @param session sesión del Socket
+     * @returns Usuarios dentro del canal de voz
+     */
+    @Input("join-voice-channel")
+    @Broadcast("users-in-voice-channel")
     joinRoom(
-      @Args(0) name: string,
+       @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession
-    ): User[]
+    ): Map<string,string>
        {
-      const user = session.get("user") as User;
-      console.log("Joinned to the room => ", name);
+      const userSocketID = session.get("user");
 
-      user.nombre = name;
-      this.users.set(user.uid!, user);
+      const userInVoiceChannel: Map<string,string> = new Map<string,string>();
+      userInVoiceChannel.set(userSocketID,'uid');
 
-      console.log(this.users);
+      this.channelVoice.set(voiceChannelID,userInVoiceChannel)
 
-      return this.getUsers();
+      return this.getUsersInVoiceChannel(voiceChannelID);
     }
     
     /**
      * Retorna la lista de usuarios
-     * @returns {Array}
+     * @returns {Map<string,string>}
      */
-    public getUsers(): User[]{
-      const users: User[] = [];
-      this.users.forEach(user => {
-        users.push(user);
-      });
-
-      return users;
+    public getUsersInVoiceChannel(voiceChannelID: string): Map<string,string>{
+      return this.channelVoice.get(voiceChannelID)!;
     }
   }

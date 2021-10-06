@@ -1,8 +1,11 @@
 import { Socket, SocketSession, Namespace } from "@tsed/socketio";
-import { User } from "../models/user";
 export declare class RTCSocketService {
     nsp: Namespace;
-    users: Map<string, User>;
+    /**
+     * ['channelVoiceID' => ['socketID' => 'uid']]
+     * @type {Map<Map<string,string}
+     */
+    channelVoice: Map<string, Map<string, string>>;
     /**
      * Triggered the namespace is created
      */
@@ -15,10 +18,16 @@ export declare class RTCSocketService {
      * Triggered when a client disconnects from the Namespace.
      */
     $onDisconnect(socket: Socket): void;
-    joinRoom(name: string, session: SocketSession): User[];
+    /**
+     * Agrega a un usuario a un canal de voz a través de ID del canal
+     * @param voiceChannelID ID del canal de voz a unirse
+     * @param session sesión del Socket
+     * @returns Usuarios dentro del canal de voz
+     */
+    joinRoom(voiceChannelID: string, session: SocketSession): Map<string, string>;
     /**
      * Retorna la lista de usuarios
-     * @returns {Array}
+     * @returns {Map<string,string>}
      */
-    getUsers(): User[];
+    getUsersInVoiceChannel(voiceChannelID: string): Map<string, string>;
 }
