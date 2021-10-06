@@ -14,10 +14,10 @@ var socketio_1 = require("@tsed/socketio");
 var RTCSocketService = /** @class */ (function () {
     function RTCSocketService() {
         /**
-         * ['channelVoiceID' => ['socketID' => 'uid']]
+         * ['voiceChannelID' => ['socketID' => 'uid']]
          * @type {Map<Map<string,string}
          */
-        this.channelVoice = new Map();
+        this.voiceChannels = new Map();
     }
     /**
      * Triggered the namespace is created
@@ -44,18 +44,28 @@ var RTCSocketService = /** @class */ (function () {
      */
     RTCSocketService.prototype.joinRoom = function (voiceChannelID, session) {
         var userSocketID = session.get("user");
-        var userInVoiceChannel = new Map();
-        userInVoiceChannel.set(userSocketID, 'uid');
-        this.channelVoice.set(voiceChannelID, userInVoiceChannel);
-        console.log(this.channelVoice);
+        if (this.voiceChannels.has(voiceChannelID)) {
+            this.voiceChannels.forEach(function (value, key) {
+                if (key === voiceChannelID) {
+                    value.set(userSocketID, 'uid');
+                }
+            });
+        }
+        else {
+            var userMap = new Map();
+            userMap.set(userSocketID, 'uid');
+            this.voiceChannels.set(voiceChannelID, userMap);
+        }
+        console.log(this.voiceChannels);
         return this.getUsersInVoiceChannel(voiceChannelID);
     };
     /**
      * Retorna la lista de usuarios
-     * @returns {Map<string,string>}
+     * @returns JSON {Map<string,string>}
      */
     RTCSocketService.prototype.getUsersInVoiceChannel = function (voiceChannelID) {
-        return this.channelVoice.get(voiceChannelID);
+        var result = Object.fromEntries(this.voiceChannels.get(voiceChannelID));
+        return result;
     };
     __decorate([
         socketio_1.Nsp
@@ -74,7 +84,7 @@ var RTCSocketService = /** @class */ (function () {
         __param(1, socketio_1.SocketSession)
     ], RTCSocketService.prototype, "joinRoom", null);
     RTCSocketService = __decorate([
-        (0, socketio_1.SocketService)("/channelVoice")
+        (0, socketio_1.SocketService)("/voiceChannel")
     ], RTCSocketService);
     return RTCSocketService;
 }());

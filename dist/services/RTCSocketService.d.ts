@@ -2,10 +2,10 @@ import { Socket, SocketSession, Namespace } from "@tsed/socketio";
 export declare class RTCSocketService {
     nsp: Namespace;
     /**
-     * ['channelVoiceID' => ['socketID' => 'uid']]
+     * ['voiceChannelID' => ['socketID' => 'uid']]
      * @type {Map<Map<string,string}
      */
-    channelVoice: Map<string, Map<string, string>>;
+    voiceChannels: Map<string, Map<string, string>>;
     /**
      * Triggered the namespace is created
      */
@@ -27,7 +27,7 @@ export declare class RTCSocketService {
     joinRoom(voiceChannelID: string, session: SocketSession): Map<string, string>;
     /**
      * Retorna la lista de usuarios
-     * @returns {Map<string,string>}
+     * @returns JSON {Map<string,string>}
      */
-    getUsersInVoiceChannel(voiceChannelID: string): Map<string, string>;
+    getUsersInVoiceChannel(voiceChannelID: string): any;
 }

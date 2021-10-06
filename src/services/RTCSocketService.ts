@@ -1,16 +1,16 @@
 
 import {Nsp, Socket, SocketService, SocketSession, Namespace, Input,  Broadcast, Args} from "@tsed/socketio";
 
-@SocketService("/channelVoice")
+@SocketService("/voiceChannel")
 export class RTCSocketService{
 
     @Nsp nsp!: Namespace;
 
     /**
-     * ['channelVoiceID' => ['socketID' => 'uid']]
+     * ['voiceChannelID' => ['socketID' => 'uid']]
      * @type {Map<Map<string,string}
      */
-    public channelVoice: Map<string, Map<string,string>> = new Map<string, Map<string,string>> ();
+    public voiceChannels: Map<string, Map<string,string>> = new Map<string, Map<string,string>> ();
     /**
      * Triggered the namespace is created
      */
@@ -47,21 +47,30 @@ export class RTCSocketService{
     ): Map<string,string>
        {
       const userSocketID = session.get("user");
+    
+      if(this.voiceChannels.has(voiceChannelID)){
+        this.voiceChannels.forEach((value,key)=>{
+          if(key === voiceChannelID){
+            value.set(userSocketID,'uid');
+          }
+      });
+      }
+      else{
+        const userMap: Map<string,string> = new Map();
+        userMap.set(userSocketID,'uid');
+        this.voiceChannels.set(voiceChannelID, userMap);
+      }
 
-      const userInVoiceChannel: Map<string,string> = new Map<string,string>();
-      userInVoiceChannel.set(userSocketID,'uid');
-
-      this.channelVoice.set(voiceChannelID,userInVoiceChannel);
-
-      console.log(this.channelVoice);
+      console.log(this.voiceChannels);
       return this.getUsersInVoiceChannel(voiceChannelID);
     }
     
     /**
      * Retorna la lista de usuarios
-     * @returns {Map<string,string>}
+     * @returns JSON {Map<string,string>}
      */
-    public getUsersInVoiceChannel(voiceChannelID: string): Map<string,string>{
-      return this.channelVoice.get(voiceChannelID)!;
+    public getUsersInVoiceChannel(voiceChannelID: string): any{
+      const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
+      return result;
     }
   }
