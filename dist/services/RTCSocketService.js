@@ -56,8 +56,12 @@ var RTCSocketService = /** @class */ (function () {
             userMap.set(userSocketID, 'uid');
             this.voiceChannels.set(voiceChannelID, userMap);
         }
-        console.log(this.voiceChannels);
-        return this.getUsersInVoiceChannel(voiceChannelID);
+        var channelIDFromUser = '';
+        this.voiceChannels.forEach(function (value, key, _) {
+            if (value.has(userSocketID))
+                channelIDFromUser = key;
+        });
+        return this.getUsersInVoiceChannel(channelIDFromUser);
     };
     /**
      * Retorna la lista de usuarios

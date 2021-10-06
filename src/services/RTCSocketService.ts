@@ -47,6 +47,7 @@ export class RTCSocketService{
     ): Map<string,string>
        {
       const userSocketID = session.get("user");
+      
     
       if(this.voiceChannels.has(voiceChannelID)){
         this.voiceChannels.forEach((value,key)=>{
@@ -61,8 +62,12 @@ export class RTCSocketService{
         this.voiceChannels.set(voiceChannelID, userMap);
       }
 
-      console.log(this.voiceChannels);
-      return this.getUsersInVoiceChannel(voiceChannelID);
+      let channelIDFromUser: string = '';
+      this.voiceChannels.forEach((value,key,_) => {
+        if(value.has(userSocketID)) channelIDFromUser = key;
+      });
+
+      return this.getUsersInVoiceChannel(channelIDFromUser);
     }
     
     /**
