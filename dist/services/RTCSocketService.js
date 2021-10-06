@@ -47,6 +47,7 @@ var RTCSocketService = /** @class */ (function () {
         var userInVoiceChannel = new Map();
         userInVoiceChannel.set(userSocketID, 'uid');
         this.channelVoice.set(voiceChannelID, userInVoiceChannel);
+        console.log(this.channelVoice);
         return this.getUsersInVoiceChannel(voiceChannelID);
     };
     /**

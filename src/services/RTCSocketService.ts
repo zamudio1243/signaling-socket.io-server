@@ -51,8 +51,9 @@ export class RTCSocketService{
       const userInVoiceChannel: Map<string,string> = new Map<string,string>();
       userInVoiceChannel.set(userSocketID,'uid');
 
-      this.channelVoice.set(voiceChannelID,userInVoiceChannel)
+      this.channelVoice.set(voiceChannelID,userInVoiceChannel);
 
+      console.log(this.channelVoice);
       return this.getUsersInVoiceChannel(voiceChannelID);
     }
     
