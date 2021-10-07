@@ -1,5 +1,5 @@
 
-import {Nsp, Socket, SocketService, SocketSession, Namespace, Input,  Broadcast, Args} from "@tsed/socketio";
+import {Nsp, Socket, SocketService, SocketSession, Namespace, Input,  Broadcast, Args, Emit} from "@tsed/socketio";
 
 @SocketService("/voiceChannel")
 export class RTCSocketService{
@@ -28,9 +28,19 @@ export class RTCSocketService{
   
     /**
      * Triggered when a client disconnects from the Namespace.
+     * Se elimina el usuario del canal de voz
+     * Si el canal de voz  se queda vacio se elimina
      */
     $onDisconnect(@Socket socket: Socket) {
-  
+      this.voiceChannels.forEach((value,key,map) => {
+        if(value.has(socket.id)){
+          value.delete(socket.id);
+          if(value.size === 0 ){
+            map.delete(key);
+          }
+        }
+      });  
+      console.table(this.voiceChannels);
     }
 
     /**
@@ -44,11 +54,9 @@ export class RTCSocketService{
     joinRoom(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession
-    ): Map<string,string>
-       {
+    ): Map<string,string>{
       const userSocketID = session.get("user");
       
-    
       if(this.voiceChannels.has(voiceChannelID)){
         this.voiceChannels.forEach((value,key)=>{
           if(key === voiceChannelID){
@@ -67,8 +75,23 @@ export class RTCSocketService{
         if(value.has(userSocketID)) channelIDFromUser = key;
       });
 
+      
       return this.getUsersInVoiceChannel(channelIDFromUser);
     }
+
+    @Input("sending-signal")
+    @Emit("user-joined")
+    sendingSignal(
+      @Args(0) payload: Signal,
+      @SocketSession session: SocketSession
+    ): Signal {
+      return this.emitSignal(payload);
+    }
+
+    public emitSignal(signal: Signal): Signal{
+      return signal;
+    }
+
     
     /**
      * Retorna la lista de usuarios
@@ -76,6 +99,13 @@ export class RTCSocketService{
      */
     public getUsersInVoiceChannel(voiceChannelID: string): any{
       const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
+      console.table(result);
       return result;
     }
+  }
+
+
+  interface Signal{
+    signal: string;
+    voiceChannel: string
   }
