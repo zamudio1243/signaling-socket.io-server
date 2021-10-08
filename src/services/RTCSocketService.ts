@@ -96,6 +96,15 @@ export class RTCSocketService{
       this.leaveRoom(session);
     }
 
+    @Input("emit-users")
+    emitUsers(
+      @Args(0) voiceChannelID: string,
+   ): void {
+      this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
+   }
+
+
+
     leaveRoom(session: SocketSession){
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
@@ -139,6 +148,7 @@ export class RTCSocketService{
 
     /**
      * Retorna la lista de usuarios
+     * @param voiceChannelID ID del canal de voz
      * @returns JSON {Map<string,string>}
      */
     public getUsersInVoiceChannel(voiceChannelID: string): any{
