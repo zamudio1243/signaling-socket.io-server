@@ -16,6 +16,8 @@ export declare class RTCSocketService {
     $onConnection(socket: Socket, session: SocketSession): void;
     /**
      * Triggered when a client disconnects from the Namespace.
+     * Se elimina el usuario del canal de voz
+     * Si el canal de voz  se queda vacio se elimina
      */
     $onDisconnect(socket: Socket): void;
     /**
@@ -24,10 +26,17 @@ export declare class RTCSocketService {
      * @param session sesión del Socket
      * @returns Usuarios dentro del canal de voz
      */
-    joinRoom(voiceChannelID: string, session: SocketSession): Map<string, string>;
+    joinRoom(voiceChannelID: string, session: SocketSession, socket: Socket): void;
+    sendingSignal(payload: Signal, session: SocketSession): Signal;
+    emitSignal(signal: Signal): Signal;
     /**
      * Retorna la lista de usuarios
      * @returns JSON {Map<string,string>}
      */
     getUsersInVoiceChannel(voiceChannelID: string): any;
 }
+interface Signal {
+    signal: string;
+    voiceChannel: string;
+}
+export {};
