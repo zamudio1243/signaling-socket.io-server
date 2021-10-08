@@ -1,5 +1,7 @@
 
-import {Nsp, Socket, SocketService, SocketSession, Namespace, Input,  Broadcast, Args} from "@tsed/socketio";
+import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args} from "@tsed/socketio";
+import { SignalPayload } from "../models/signalpayload";
+import { User } from "../models/user";
 
 @SocketService("/voiceChannel")
 export class RTCSocketService{
@@ -7,10 +9,10 @@ export class RTCSocketService{
     @Nsp nsp!: Namespace;
 
     /**
-     * ['voiceChannelID' => ['socketID' => 'uid']]
+     * ['voiceChannelID' => ['socketID' => 'User']]
      * @type {Map<Map<string,string}
      */
-    public voiceChannels: Map<string, Map<string,string>> = new Map<string, Map<string,string>> ();
+    public voiceChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
     /**
      * Triggered the namespace is created
      */
@@ -23,14 +25,25 @@ export class RTCSocketService{
      */
     $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
       console.log("New connection, ID =>", socket.id);
-      session.set("user", socket.id);
+      if(socket.handshake.auth){
+        session.set("user", <User>{
+          socketID: socket.id,
+          uid: socket.handshake.auth.uid
+        });
+      }
+      else{
+        socket.disconnect();
+      }
     }
   
     /**
      * Triggered when a client disconnects from the Namespace.
+     * Se elimina el usuario del canal de voz
+     * Si el canal de voz  se queda vacio se elimina
      */
-    $onDisconnect(@Socket socket: Socket) {
-  
+    $onDisconnect(@SocketSession session: SocketSession) {
+      this.leaveRoom(session) 
+      console.table(this.voiceChannels);
     }
 
     /**
@@ -40,42 +53,98 @@ export class RTCSocketService{
      * @returns Usuarios dentro del canal de voz
      */
     @Input("join-voice-channel")
-    @Broadcast("users-in-voice-channel")
-    joinRoom(
+    joinVoiceChannel(
        @Args(0) voiceChannelID: string,
-       @SocketSession session: SocketSession
-    ): Map<string,string>
-       {
-      const userSocketID = session.get("user");
-      
-    
-      if(this.voiceChannels.has(voiceChannelID)){
-        this.voiceChannels.forEach((value,key)=>{
-          if(key === voiceChannelID){
-            value.set(userSocketID,'uid');
-          }
-      });
+       @SocketSession session: SocketSession,
+    ): void {
+      this.joinRoom(voiceChannelID,session);
+    }
+
+    joinRoom(
+      voiceChannelID: string,
+      session: SocketSession
+    ): void {
+      const user: User = session.get("user");
+      if( user.currentVoiceChannel === voiceChannelID) return;
+
+      const voiceChannel = this.voiceChannels.get(voiceChannelID);
+      if(user.currentVoiceChannel){
+        this.leaveRoom(session);
+      }
+      if(voiceChannel){
+        voiceChannel.set(user.socketID, user);
       }
       else{
-        const userMap: Map<string,string> = new Map();
-        userMap.set(userSocketID,'uid');
-        this.voiceChannels.set(voiceChannelID, userMap);
+        this.voiceChannels.set(voiceChannelID,new Map<string,User>(
+          [
+            [
+              user.socketID, user
+            ]
+          ]
+        ));
       }
+      user.currentVoiceChannel = voiceChannelID;
+      console.log(`${voiceChannelID}-users-in-voice-channel`);
+      this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
 
-      let channelIDFromUser: string = '';
-      this.voiceChannels.forEach((value,key,_) => {
-        if(value.has(userSocketID)) channelIDFromUser = key;
-      });
-
-      return this.getUsersInVoiceChannel(channelIDFromUser);
     }
-    
+
+    @Input("leave-voice-channel")
+    leaveVoiceChannel(
+       @SocketSession session: SocketSession,
+    ): void {
+      this.leaveRoom(session);
+    }
+
+    leaveRoom(session: SocketSession){
+      const user: User = session.get("user");
+      if(user.currentVoiceChannel){
+        const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
+        if(voiceChannel){
+          if(voiceChannel.delete(user.socketID)){
+            console.log("Usuario eliminado");
+          }
+          if(voiceChannel.size === 0){
+            if(this.voiceChannels.delete(user.currentVoiceChannel)){
+              console.log("Voice channel cerrado");
+            }
+          }
+          this.nsp.emit(`${user.currentVoiceChannel}-users-in-voice-channel`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
+          user.currentVoiceChannel= undefined;
+        }
+      }
+    }
+
+    @Input("sending-signal")
+    sendingSignal(
+      @Args(0) payload: SignalPayload,
+      @SocketSession session: SocketSession
+    ): void {
+      const user: User = session.get("user");
+      if(user.currentVoiceChannel){
+        this.nsp.emit(payload.uid,payload);
+      }
+    }
+
+    @Input("returning-signal")
+    returningSignal(
+      @Args(0) payload: SignalPayload,
+      @SocketSession session: SocketSession
+    ): void {
+      const user: User = session.get("user");
+      if(user.currentVoiceChannel){
+        this.nsp.emit(payload.socketID,payload);
+      }
+    }
+
     /**
      * Retorna la lista de usuarios
      * @returns JSON {Map<string,string>}
      */
     public getUsersInVoiceChannel(voiceChannelID: string): any{
       const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
+      console.table(result);
       return result;
     }
   }
+
