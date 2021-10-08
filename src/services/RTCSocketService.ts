@@ -104,12 +104,12 @@ export class RTCSocketService{
           if(voiceChannel.delete(user.socketID)){
             console.log("Usuario eliminado");
           }
+          this.nsp.emit(`${user.currentVoiceChannel}-users-in-voice-channel`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
           if(voiceChannel.size === 0){
             if(this.voiceChannels.delete(user.currentVoiceChannel)){
               console.log("Voice channel cerrado");
             }
           }
-          this.nsp.emit(`${user.currentVoiceChannel}-users-in-voice-channel`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
           user.currentVoiceChannel= undefined;
         }
       }
