@@ -102,8 +102,12 @@ export class RTCSocketService{
     @Input("emit-users")
     emitUsers(
       @Args(0) voiceChannelID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
    ): void {
-      this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
+    const user: User = session.get("user");
+    socket.emit('user-status', !!user.currentVoiceChannel);
+    this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
 
