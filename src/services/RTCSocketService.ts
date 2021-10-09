@@ -152,9 +152,14 @@ export class RTCSocketService{
      * @returns JSON {Map<string,string>}
      */
     public getUsersInVoiceChannel(voiceChannelID: string): any{
-      const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
-      console.table(result);
-      return result;
+      if(this.voiceChannels.has(voiceChannelID)){
+        const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
+        console.table(result);
+        return result;
+      }
+      else{
+        return {};
+      }
     }
   }
 
