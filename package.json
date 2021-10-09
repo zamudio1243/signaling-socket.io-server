@@ -33,7 +33,6 @@
     "lint": "tslint src/**/*.ts test/**/*.ts",
     "preversion": "npm run build && npm run cover:check",
     "postversion": "git push && git push --tags",
-    "prepare": "npm run build",
     "test": "mocha",
     "upgrade": "npx npm-check -u",
     "version": "npm run build && npm run changelog:update",
