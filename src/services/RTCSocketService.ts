@@ -88,7 +88,7 @@ export class RTCSocketService{
       user.currentVoiceChannel = voiceChannelID;
       console.log(`${voiceChannelID}-users-in-voice-channel`);
       this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
-      socket.emit('user-status',user.currentVoiceChannel);
+      socket.emit('user-status',{channelID: user.currentVoiceChannel});
     }
 
     @Input("leave-voice-channel")
@@ -106,7 +106,7 @@ export class RTCSocketService{
       @SocketSession session: SocketSession
    ): void {
     const user: User = session.get("user");
-    socket.emit('user-status', user.currentVoiceChannel);
+    socket.emit('user-status',{channelID: user.currentVoiceChannel});
     this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
@@ -127,7 +127,7 @@ export class RTCSocketService{
             }
           }
           user.currentVoiceChannel= undefined;
-          socket.emit('user-status',undefined);
+          socket.emit('user-status',{});
         }
       }
 
