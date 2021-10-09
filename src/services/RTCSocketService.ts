@@ -41,8 +41,8 @@ export class RTCSocketService{
      * Se elimina el usuario del canal de voz
      * Si el canal de voz  se queda vacio se elimina
      */
-    $onDisconnect(@SocketSession session: SocketSession) {
-      this.leaveRoom(session) 
+    $onDisconnect(@SocketSession session: SocketSession, @Socket socket: Socket) {
+      this.leaveRoom(session,socket);
       console.table(this.voiceChannels);
     }
 
@@ -56,20 +56,22 @@ export class RTCSocketService{
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
+       @Socket socket: Socket
     ): void {
-      this.joinRoom(voiceChannelID,session);
+      this.joinRoom(voiceChannelID,session,socket);
     }
 
     joinRoom(
       voiceChannelID: string,
-      session: SocketSession
+      session: SocketSession,
+      socket: Socket
     ): void {
       const user: User = session.get("user");
       if( user.currentVoiceChannel === voiceChannelID) return;
 
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
-        this.leaveRoom(session);
+        this.leaveRoom(session,socket);
       }
       if(voiceChannel){
         voiceChannel.set(user.socketID, user);
@@ -86,14 +88,15 @@ export class RTCSocketService{
       user.currentVoiceChannel = voiceChannelID;
       console.log(`${voiceChannelID}-users-in-voice-channel`);
       this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
-
+      socket.emit('user-status',true);
     }
 
     @Input("leave-voice-channel")
     leaveVoiceChannel(
        @SocketSession session: SocketSession,
+       @Socket socket: Socket
     ): void {
-      this.leaveRoom(session);
+      this.leaveRoom(session,socket);
     }
 
     @Input("emit-users")
@@ -105,7 +108,7 @@ export class RTCSocketService{
 
 
 
-    leaveRoom(session: SocketSession){
+    leaveRoom(session: SocketSession, socket: Socket){
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
@@ -120,8 +123,10 @@ export class RTCSocketService{
             }
           }
           user.currentVoiceChannel= undefined;
+          socket.emit('user-status',false);
         }
       }
+
     }
 
     @Input("sending-signal")
@@ -145,6 +150,8 @@ export class RTCSocketService{
         this.nsp.emit(payload.socketID,payload);
       }
     }
+
+    
 
     /**
      * Retorna la lista de usuarios
