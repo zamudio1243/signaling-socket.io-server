@@ -22,7 +22,7 @@ export class FileSocketService{
      * Triggered when a new client connects to the Namespace.
      */
     $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
-      console.log("New connection, ID =>", socket.id);
+      console.log("New connection in code channel, ID =>", socket.id);
       if(socket.handshake.auth){
         session.set("user", <User>{
           socketID: socket.id,
@@ -84,8 +84,7 @@ export class FileSocketService{
         ));
       }
       user.currentCodeChannel = codeChannelID;
-      console.log('users-in-code-channel');
-      console.table(this.codeChannels);
+      console.log(`${codeChannelID}-users-in-code-channel`);
       this.nsp.emit(`${codeChannelID}-users-in-code-channel`,this.getUsersInCodeChannel(codeChannelID));
       socket.emit('user-status',{channelID: user.currentCodeChannel});
     }
@@ -139,6 +138,7 @@ export class FileSocketService{
      public getUsersInCodeChannel(codeChannelID: string): any{
       if(this.codeChannels.has(codeChannelID)){
         const result = Object.fromEntries(this.codeChannels.get(codeChannelID)!);
+        console.table(result);
         return result;
       }
       else{

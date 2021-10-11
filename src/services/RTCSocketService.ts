@@ -26,7 +26,7 @@ export class RTCSocketService{
      * Triggered when a new client connects to the Namespace.
      */
     $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
-      console.log("New connection, ID =>", socket.id);
+      console.log("New connection in voice channel, ID =>", socket.id);
       if(socket.handshake.auth){
         session.set("user", <User>{
           socketID: socket.id,
@@ -88,6 +88,7 @@ export class RTCSocketService{
         ));
       }
       user.currentVoiceChannel = voiceChannelID;
+      console.log(`${voiceChannelID}-users-in-code-channel`);
       this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
       socket.emit('user-status',{channelID: user.currentVoiceChannel});
     }
