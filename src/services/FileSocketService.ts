@@ -84,7 +84,8 @@ export class FileSocketService{
         ));
       }
       user.currentCodeChannel = codeChannelID;
-      console.log(`${codeChannelID}-users-in-code-channel`);
+      console.log('users-in-code-channel');
+      console.table(this.codeChannels);
       this.nsp.emit(`${codeChannelID}-users-in-code-channel`,this.getUsersInCodeChannel(codeChannelID));
       socket.emit('user-status',{channelID: user.currentCodeChannel});
     }
@@ -137,8 +138,7 @@ export class FileSocketService{
      */
      public getUsersInCodeChannel(codeChannelID: string): any{
       if(this.codeChannels.has(codeChannelID)){
-        const result = Object.fromEntries(this.codeChannels.get(codeChannelID)!)
-        console.table(result);
+        const result = Object.fromEntries(this.codeChannels.get(codeChannelID)!);
         return result;
       }
       else{

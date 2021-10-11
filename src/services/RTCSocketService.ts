@@ -13,6 +13,8 @@ export class RTCSocketService{
      * @type {Map<Map<string,string}
      */
     public voiceChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
+
+
     /**
      * Triggered the namespace is created
      */
@@ -86,7 +88,6 @@ export class RTCSocketService{
         ));
       }
       user.currentVoiceChannel = voiceChannelID;
-      console.log(`${voiceChannelID}-users-in-voice-channel`);
       this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
       socket.emit('user-status',{channelID: user.currentVoiceChannel});
     }
