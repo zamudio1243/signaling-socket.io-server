@@ -142,6 +142,8 @@ export class RTCSocketService{
     ): void {
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
+        console.log("sending-signal")
+        console.table(payload);
         this.nsp.emit(`${payload.uid}-signal-sent`,payload);
       }
     }
@@ -152,6 +154,8 @@ export class RTCSocketService{
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
+      console.log("returning-signal")
+      console.table(payload);
       if(user.currentVoiceChannel){
         this.nsp.emit(`${payload.socketID}-returned-signal`,payload);
       }
