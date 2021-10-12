@@ -70,13 +70,18 @@ export class RTCSocketService{
     ): void {
       const user: User = session.get("user");
       if( user.currentVoiceChannel === voiceChannelID) return;
+      
 
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
         this.leaveRoom(session,socket);
       }
       if(voiceChannel){
+        voiceChannel.forEach((v)=>{
+          if(v.uid === user.uid) return;
+        });
         voiceChannel.set(user.socketID, user);
+        
       }
       else{
         this.voiceChannels.set(voiceChannelID,new Map<string,User>(
