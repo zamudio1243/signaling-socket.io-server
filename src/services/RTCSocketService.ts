@@ -1,7 +1,9 @@
 
 import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args} from "@tsed/socketio";
-import { SignalPayload } from "../models/signalpayload";
+import { SignalPayload } from "../models/signal_payload";
 import { User } from "../models/user";
+import { EventName } from "../utils/event_name";
+import { ResponseEventName } from "../utils/response_event_name";
 
 @SocketService("/voiceChannel")
 export class RTCSocketService{
@@ -54,7 +56,7 @@ export class RTCSocketService{
      * @param session sesión del Socket
      * @returns Usuarios dentro del canal de voz
      */
-    @Input("join-voice-channel")
+    @Input(EventName.JOIN_VOICE_CHANNEL)
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
@@ -94,11 +96,11 @@ export class RTCSocketService{
       }
       user.currentVoiceChannel = voiceChannelID;
       console.log(`${voiceChannelID}-users-in-code-channel`);
-      this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
-      socket.emit('user-status',{channelID: user.currentVoiceChannel});
+      this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
+      socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
     }
 
-    @Input("leave-voice-channel")
+    @Input(EventName.LEAVE_VOICE_CHANNEL)
     leaveVoiceChannel(
        @SocketSession session: SocketSession,
        @Socket socket: Socket
@@ -106,15 +108,15 @@ export class RTCSocketService{
       this.leaveRoom(session,socket);
     }
 
-    @Input("emit-users")
+    @Input(EventName.EMIT_USERS)
     emitUsers(
       @Args(0) voiceChannelID: string,
       @Socket socket: Socket,
       @SocketSession session: SocketSession
    ): void {
     const user: User = session.get("user");
-    socket.emit('user-status',{channelID: user.currentVoiceChannel});
-    this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
+    socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
+    this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
 
@@ -127,20 +129,20 @@ export class RTCSocketService{
           if(voiceChannel.delete(user.socketID)){
             console.log("Usuario eliminado");
           }
-          this.nsp.emit(`${user.currentVoiceChannel}-users-in-voice-channel`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
+          this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
           if(voiceChannel.size === 0){
             if(this.voiceChannels.delete(user.currentVoiceChannel)){
               console.log("Voice channel cerrado");
             }
           }
           user.currentVoiceChannel= undefined;
-          socket.emit('user-status',{});
+          socket.emit(`${ResponseEventName.USER_STATUS}`,{});
         }
       }
 
     }
 
-    @Input("sending-signal")
+    @Input(EventName.SENDING_SIGNAL)
     sendingSignal(
       @Args(0) payload: SignalPayload,
       @SocketSession session: SocketSession
@@ -148,24 +150,22 @@ export class RTCSocketService{
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
         console.log(`User ${user.uid} is sending a signal in ${user.currentVoiceChannel}`);
-        this.nsp.emit(`${payload.uid}-signal-sent`,payload);
+        this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.SIGNAL_SENT}`,payload);
       }
     }
 
-    @Input("returning-signal")
+    @Input(EventName.RETURNING_SIGNAL)
     returningSignal(
       @Args(0) payload: SignalPayload,
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
-      console.log("returning-signal")
+      console.log(EventName.RETURNING_SIGNAL);
       if(user.currentVoiceChannel){
-        console.log(`User ${user.uid} is returning asignal in ${user.currentVoiceChannel}`);
-        this.nsp.emit(`${payload.socketID}-returned-signal`,payload);
+        console.log(`User ${user.uid} is returning a signal in ${user.currentVoiceChannel}`);
+        this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.RETURNED_SIGNAL}`,payload);
       }
     }
-
-    
 
     /**
      * Retorna la lista de usuarios
