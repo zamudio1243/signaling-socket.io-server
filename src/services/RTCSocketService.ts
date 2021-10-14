@@ -2,6 +2,7 @@
 import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args} from "@tsed/socketio";
 import { SignalPayload } from "../models/signalpayload";
 import { User } from "../models/user";
+import { EventName } from "../utils/event_name";
 
 @SocketService("/voiceChannel")
 export class RTCSocketService{
@@ -52,7 +53,7 @@ export class RTCSocketService{
      * @param session sesión del Socket
      * @returns Usuarios dentro del canal de voz
      */
-    @Input("join-voice-channel")
+    @Input(EventName.JOIN_VOICE_CHANNEL)
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
@@ -89,7 +90,7 @@ export class RTCSocketService{
 
     }
 
-    @Input("leave-voice-channel")
+    @Input(EventName.LEAVE_VOICE_CHANNEL)
     leaveVoiceChannel(
        @SocketSession session: SocketSession,
     ): void {
@@ -115,23 +116,25 @@ export class RTCSocketService{
       }
     }
 
-    @Input("sending-signal")
+    @Input(EventName.SENDING_SIGNAL)
     sendingSignal(
       @Args(0) payload: SignalPayload,
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
-        this.nsp.emit(payload.uid,payload);
+        console.log(`User ${user.uid} is sending a signal in ${user.currentVoiceChannel}`);
+        this.nsp.emit(`${payload.uid}-${}`,payload);
       }
     }
 
-    @Input("returning-signal")
+    @Input(EventName.RETURNING_SIGNAL)
     returningSignal(
       @Args(0) payload: SignalPayload,
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
+      console.log(EventName.RETURNING_SIGNAL);
       if(user.currentVoiceChannel){
         this.nsp.emit(payload.socketID,payload);
       }
