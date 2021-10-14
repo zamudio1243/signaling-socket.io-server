@@ -1,9 +1,9 @@
-import { Signal } from "./signal";
+import Peer from 'simple-peer';
 
 
 
 export interface SignalPayload{
-    signal: Signal;
+    signal: Peer.SignalData;
     uid: string;
     socketID: string;
 }

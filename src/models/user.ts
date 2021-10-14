@@ -8,6 +8,6 @@
     socketID: string;
     uid: string;
     currentVoiceChannel?: string;
-
+    currentCodeChannel?: string;
 }
   

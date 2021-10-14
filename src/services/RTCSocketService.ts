@@ -14,6 +14,8 @@ export class RTCSocketService{
      * @type {Map<Map<string,string}
      */
     public voiceChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
+
+
     /**
      * Triggered the namespace is created
      */
@@ -25,7 +27,7 @@ export class RTCSocketService{
      * Triggered when a new client connects to the Namespace.
      */
     $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
-      console.log("New connection, ID =>", socket.id);
+      console.log("New connection in voice channel, ID =>", socket.id);
       if(socket.handshake.auth){
         session.set("user", <User>{
           socketID: socket.id,
@@ -42,8 +44,8 @@ export class RTCSocketService{
      * Se elimina el usuario del canal de voz
      * Si el canal de voz  se queda vacio se elimina
      */
-    $onDisconnect(@SocketSession session: SocketSession) {
-      this.leaveRoom(session) 
+    $onDisconnect(@SocketSession session: SocketSession, @Socket socket: Socket) {
+      this.leaveRoom(session,socket);
       console.table(this.voiceChannels);
     }
 
@@ -57,23 +59,30 @@ export class RTCSocketService{
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
+       @Socket socket: Socket
     ): void {
-      this.joinRoom(voiceChannelID,session);
+      this.joinRoom(voiceChannelID,session,socket);
     }
 
     joinRoom(
       voiceChannelID: string,
-      session: SocketSession
+      session: SocketSession,
+      socket: Socket
     ): void {
       const user: User = session.get("user");
       if( user.currentVoiceChannel === voiceChannelID) return;
+      
 
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
-        this.leaveRoom(session);
+        this.leaveRoom(session,socket);
       }
       if(voiceChannel){
+        voiceChannel.forEach((v)=>{
+          if(v.uid === user.uid) return;
+        });
         voiceChannel.set(user.socketID, user);
+        
       }
       else{
         this.voiceChannels.set(voiceChannelID,new Map<string,User>(
@@ -85,19 +94,33 @@ export class RTCSocketService{
         ));
       }
       user.currentVoiceChannel = voiceChannelID;
-      console.log(`${voiceChannelID}-users-in-voice-channel`);
+      console.log(`${voiceChannelID}-users-in-code-channel`);
       this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
-
+      socket.emit('user-status',{channelID: user.currentVoiceChannel});
     }
 
     @Input(EventName.LEAVE_VOICE_CHANNEL)
     leaveVoiceChannel(
        @SocketSession session: SocketSession,
+       @Socket socket: Socket
     ): void {
-      this.leaveRoom(session);
+      this.leaveRoom(session,socket);
     }
 
-    leaveRoom(session: SocketSession){
+    @Input("emit-users")
+    emitUsers(
+      @Args(0) voiceChannelID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+   ): void {
+    const user: User = session.get("user");
+    socket.emit('user-status',{channelID: user.currentVoiceChannel});
+    this.nsp.emit(`${voiceChannelID}-users-in-voice-channel`,this.getUsersInVoiceChannel(voiceChannelID));
+   }
+
+
+
+    leaveRoom(session: SocketSession, socket: Socket){
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
@@ -112,8 +135,10 @@ export class RTCSocketService{
             }
           }
           user.currentVoiceChannel= undefined;
+          socket.emit('user-status',{});
         }
       }
+
     }
 
     @Input(EventName.SENDING_SIGNAL)
@@ -136,18 +161,27 @@ export class RTCSocketService{
       const user: User = session.get("user");
       console.log(EventName.RETURNING_SIGNAL);
       if(user.currentVoiceChannel){
-        this.nsp.emit(payload.socketID,payload);
+        console.log(`User ${user.uid} is returning asignal in ${user.currentVoiceChannel}`);
+        this.nsp.emit(`${payload.socketID}-returned-signal`,payload);
       }
     }
 
+    
+
     /**
      * Retorna la lista de usuarios
+     * @param voiceChannelID ID del canal de voz
      * @returns JSON {Map<string,string>}
      */
     public getUsersInVoiceChannel(voiceChannelID: string): any{
-      const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
-      console.table(result);
-      return result;
+      if(this.voiceChannels.has(voiceChannelID)){
+        const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
+        console.table(result);
+        return result;
+      }
+      else{
+        return {};
+      }
     }
   }
 
