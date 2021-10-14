@@ -145,4 +145,35 @@ export class FileSocketService{
         return {};
       }
     }
+
+    /**
+     * Evia coordenadas de un usuario en el canal de codigo 
+     * @param coordinates coordinadas del usuario 
+     * @param session sesión del Socket
+     * @returns coordinadas del usuario en el canal de codigo
+     */
+     @Input("sent-coordinates")
+     sentCoordinates(
+        @Args(0) coordinates: {
+          x: number
+          y: number
+        },
+        @SocketSession session: SocketSession,
+        @Socket socket: Socket
+     ): void {
+       this.sendCoordinates(coordinates, session, socket);
+     }
+     
+     sendCoordinates(
+      coordinates: {
+        x: number
+        y: number
+      },
+      session: SocketSession,
+      socket: Socket
+    ): void {
+      const user: User = session.get("user");
+      this.nsp.emit(`${user.currentCodeChannel}-coordinates-of-user`,coordinates);
+    }
+    
   }
