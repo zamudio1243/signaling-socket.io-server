@@ -71,6 +71,9 @@ export class RTCSocketService{
       socket: Socket
     ): void {
       const user: User = session.get("user");
+      console.log(`user.currentVoiceChannel: ${user.currentVoiceChannel}`);
+      console.log(`voiceChannelID: ${voiceChannelID}`);
+      
       if( user.currentVoiceChannel === voiceChannelID) return;
       
 
@@ -79,11 +82,7 @@ export class RTCSocketService{
         this.leaveRoom(session,socket);
       }
       if(voiceChannel){
-        voiceChannel.forEach((v)=>{
-          if(v.uid === user.uid) return;
-        });
         voiceChannel.set(user.socketID, user);
-        
       }
       else{
         this.voiceChannels.set(voiceChannelID,new Map<string,User>(
@@ -95,7 +94,7 @@ export class RTCSocketService{
         ));
       }
       user.currentVoiceChannel = voiceChannelID;
-      console.log(`${voiceChannelID}-users-in-code-channel`);
+      console.log(`${voiceChannelID}-users-in-voice-channel`);
       this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
       socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
     }
@@ -123,6 +122,9 @@ export class RTCSocketService{
 
     leaveRoom(session: SocketSession, socket: Socket){
       const user: User = session.get("user");
+      console.log("intentando eliminar usuario");
+      
+      console.table(user);
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
         if(voiceChannel){
