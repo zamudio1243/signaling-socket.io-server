@@ -70,13 +70,10 @@ export class RTCSocketService{
       session: SocketSession,
       socket: Socket
     ): void {
-      const user: User = session.get("user");
-      console.log(`user.currentVoiceChannel: ${user.currentVoiceChannel}`);
-      console.log(`voiceChannelID: ${voiceChannelID}`);
+      const user: User = session.get("user");      
       
       if( user.currentVoiceChannel === voiceChannelID) return;
       
-
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
         this.leaveRoom(session,socket);
