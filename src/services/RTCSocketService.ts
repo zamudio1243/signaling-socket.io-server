@@ -6,7 +6,7 @@ import { EventName } from "../utils/event_name";
 import { ResponseEventName } from "../utils/response_event_name";
 
 @SocketService("/voiceChannel")
-export class RTCSocketService{
+export class VoiceChannelSocketService{
 
     @Nsp nsp!: Namespace;
 
@@ -71,8 +71,10 @@ export class RTCSocketService{
       socket: Socket
     ): void {
       const user: User = session.get("user");      
-      
+
       if( user.currentVoiceChannel === voiceChannelID) return;
+
+      
       
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
@@ -104,24 +106,8 @@ export class RTCSocketService{
       this.leaveRoom(session,socket);
     }
 
-    @Input(EventName.EMIT_USERS)
-    emitUsers(
-      @Args(0) voiceChannelID: string,
-      @Socket socket: Socket,
-      @SocketSession session: SocketSession
-   ): void {
-    const user: User = session.get("user");
-    socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
-    this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
-   }
-
-
-
     leaveRoom(session: SocketSession, socket: Socket){
       const user: User = session.get("user");
-      console.log("intentando eliminar usuario");
-      
-      console.table(user);
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
         if(voiceChannel){
@@ -138,7 +124,6 @@ export class RTCSocketService{
           socket.emit(`${ResponseEventName.USER_STATUS}`,{});
         }
       }
-
     }
 
     @Input(EventName.SENDING_SIGNAL)
@@ -148,8 +133,8 @@ export class RTCSocketService{
     ): void {
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
-        console.log(`User ${user.uid} is sending a signal in ${user.currentVoiceChannel}`);
-        this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.SIGNAL_SENT}`,payload);
+        console.log(`User ${user.uid} is sending a signal to ${payload.userIDToSignal}`);
+        this.nsp.emit(`${payload.userIDToSignal}-${ResponseEventName.USER_JOINED}`,payload);
       }
     }
 
@@ -161,8 +146,8 @@ export class RTCSocketService{
       const user: User = session.get("user");
       console.log(EventName.RETURNING_SIGNAL);
       if(user.currentVoiceChannel){
-        console.log(`User ${user.uid} is returning a signal in ${user.currentVoiceChannel}`);
-        this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.RETURNED_SIGNAL}`,payload);
+        console.log(`User ${user.uid} is returning a signal to ${payload.callerID}`);
+        this.nsp.emit(`${payload.callerID}-${ResponseEventName.RECEIVING_RETURNED_SIGNAL}`,payload);
       }
     }
 

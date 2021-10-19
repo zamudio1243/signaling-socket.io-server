@@ -3,7 +3,6 @@ export enum EventName{
     LEAVE_CODE_CHANNEL = 'leave-code-channel',
     JOIN_VOICE_CHANNEL = 'join-voice-channel',
     LEAVE_VOICE_CHANNEL = 'leave-voice-channel',
-    EMIT_USERS = 'emit-users',
     SENDING_SIGNAL = 'sending-signal',
     RETURNING_SIGNAL = 'returning-signal'
 }
