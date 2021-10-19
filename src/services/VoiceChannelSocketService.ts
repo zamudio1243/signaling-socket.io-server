@@ -151,6 +151,17 @@ export class VoiceChannelSocketService{
       }
     }
 
+    @Input(EventName.EMIT_USERS)
+    emitUsers(
+      @Args(0) voiceChannelID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+   ): void {
+    const user: User = session.get("user");
+    socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
+    this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
+   }
+
     /**
      * Retorna la lista de usuarios
      * @param voiceChannelID ID del canal de voz

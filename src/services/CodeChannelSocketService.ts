@@ -2,7 +2,7 @@ import { Args, Input, Namespace, Nsp, Socket, SocketService, SocketSession} from
 import { User } from "../models/user";
 
 @SocketService("/codeChannel")
-export class FileSocketService{
+export class CodeChannelSocketService{
 
     @Nsp nsp!: Namespace;
 
@@ -155,6 +155,7 @@ export class FileSocketService{
      @Input("sent-coordinates")
      sentCoordinates(
         @Args(0) coordinates: {
+          userID: string
           x: number
           y: number
         },
@@ -166,6 +167,7 @@ export class FileSocketService{
      
      sendCoordinates(
       coordinates: {
+        userID: string
         x: number
         y: number
       },
@@ -173,7 +175,7 @@ export class FileSocketService{
       socket: Socket
     ): void {
       const user: User = session.get("user");
-      this.nsp.emit(`${user.currentCodeChannel}-coordinates-of-user`,coordinates);
+      this.nsp.emit(`${user.currentCodeChannel}-coordinates`,coordinates);
     }
     
   }
