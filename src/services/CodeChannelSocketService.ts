@@ -1,4 +1,5 @@
 import { Args, Input, Namespace, Nsp, Socket, SocketService, SocketSession} from "@tsed/socketio";
+import { CursorCoordinates } from "../models/coordinates";
 import { User } from "../models/user";
 
 @SocketService("/codeChannel")
@@ -11,6 +12,8 @@ export class CodeChannelSocketService{
      * @type {Map<Map<string,string}
      */
     public codeChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
+
+    public cursorPointers: Map<string, CursorCoordinates[]> = new Map<string, CursorCoordinates[]>();
     /**
      * Triggered the namespace is created
      */
@@ -154,11 +157,7 @@ export class CodeChannelSocketService{
      */
      @Input("sent-coordinates")
      sentCoordinates(
-        @Args(0) coordinates: {
-          userID: string
-          x: number
-          y: number
-        },
+        @Args(0) coordinates: CursorCoordinates,
         @SocketSession session: SocketSession,
         @Socket socket: Socket
      ): void {
@@ -166,16 +165,33 @@ export class CodeChannelSocketService{
      }
      
      sendCoordinates(
-      coordinates: {
-        userID: string
-        x: number
-        y: number
-      },
+      coordinates: CursorCoordinates,
       session: SocketSession,
       socket: Socket
     ): void {
       const user: User = session.get("user");
-      this.nsp.emit(`${user.currentCodeChannel}-coordinates`,coordinates);
+      if (this.cursorPointers.has(user.currentCodeChannel!)) {
+        const currentCoordinates = this.cursorPointers.get(user.currentCodeChannel!);
+        const cursorCoordinates = currentCoordinates?.find((cursor)=> {
+            return cursor.userID === coordinates.userID
+        });
+
+        if (cursorCoordinates) {
+          cursorCoordinates.x = coordinates.x
+          cursorCoordinates.y = coordinates.y
+        }
+        else{
+          currentCoordinates?.push(coordinates)
+        }
+        
+      }
+      else{
+        this.cursorPointers.set(user.currentCodeChannel!,[coordinates] )
+      }
+      this.nsp.emit(`${user.currentCodeChannel}-coordinates`,this.cursorPointers.get(user.currentCodeChannel!));
     }
+
+
+   
     
   }

@@ -1,4 +1,5 @@
-export interface Coordinates {
-    x?: string;
-    y?: string;
+export interface CursorCoordinates{
+    userID: string;
+    x: number;
+    y: number;
 }
