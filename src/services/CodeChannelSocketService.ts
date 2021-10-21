@@ -179,6 +179,7 @@ export class CodeChannelSocketService{
         if (cursorCoordinates) {
           cursorCoordinates.x = coordinates.x
           cursorCoordinates.y = coordinates.y
+          cursorCoordinates.scroll = coordinates.scroll
         }
         else{
           currentCoordinates?.push(coordinates)
