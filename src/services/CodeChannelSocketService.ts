@@ -192,18 +192,31 @@ export class CodeChannelSocketService{
       }
       this.nsp.emit(`${user.currentCodeChannel}-coordinates`,this.cursorPointers.get(user.currentCodeChannel!));
     }
-
-
-   
     
     @Input("send-code")
     sendCode(
-      @Args(0)
-      code: string,
+      @Args(0)code: string,
       socket: Socket,
       session: SocketSession
     ): void {
       const user: User = session.get("user");
-      this.nsp.emit(`${user.currentCodeChannel}-code`);
+      if (user.currentCodeChannel) {
+        this.code.set(user.currentCodeChannel,code);
+        this.nsp.emit(
+          `${user.currentCodeChannel}-code`,
+           this.getDatafromCodeChannel(user.currentCodeChannel)
+        );
+      }
+    }
+
+    getDatafromCodeChannel(
+      codeChannelID: string,
+    ): string{
+      if (this.code.has(codeChannelID)) {
+        return this.code.get(codeChannelID)!;
+      }
+      else{
+        return ''
+      }
     }
   }
