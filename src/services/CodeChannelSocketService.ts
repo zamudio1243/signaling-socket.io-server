@@ -14,6 +14,7 @@ export class CodeChannelSocketService{
     public codeChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
 
     public cursorPointers: Map<string, CursorCoordinates[]> = new Map<string, CursorCoordinates[]>();
+    public code: Map<string, string> = new Map<string, string> ();
     /**
      * Triggered the namespace is created
      */
@@ -195,4 +196,14 @@ export class CodeChannelSocketService{
 
    
     
+    @Input("send-code")
+    sendCode(
+      @Args(0)
+      code: string,
+      socket: Socket,
+      session: SocketSession
+    ): void {
+      const user: User = session.get("user");
+      this.nsp.emit(`${user.currentCodeChannel}-code`);
+    }
   }
