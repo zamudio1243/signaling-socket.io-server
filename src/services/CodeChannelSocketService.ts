@@ -14,6 +14,7 @@ export class CodeChannelSocketService{
     public codeChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
 
     public cursorPointers: Map<string, CursorCoordinates[]> = new Map<string, CursorCoordinates[]>();
+    public code: Map<string, string> = new Map<string, string> ();
     /**
      * Triggered the namespace is created
      */
@@ -191,8 +192,31 @@ export class CodeChannelSocketService{
       }
       this.nsp.emit(`${user.currentCodeChannel}-coordinates`,this.cursorPointers.get(user.currentCodeChannel!));
     }
-
-
-   
     
+    @Input("send-code")
+    sendCode(
+      @Args(0)code: string,
+      socket: Socket,
+      session: SocketSession
+    ): void {
+      const user: User = session.get("user");
+      if (user.currentCodeChannel) {
+        this.code.set(user.currentCodeChannel,code);
+        this.nsp.emit(
+          `${user.currentCodeChannel}-code`,
+           this.getDatafromCodeChannel(user.currentCodeChannel)
+        );
+      }
+    }
+
+    getDatafromCodeChannel(
+      codeChannelID: string,
+    ): string{
+      if (this.code.has(codeChannelID)) {
+        return this.code.get(codeChannelID)!;
+      }
+      else{
+        return ''
+      }
+    }
   }
