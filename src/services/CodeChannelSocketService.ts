@@ -195,18 +195,19 @@ export class CodeChannelSocketService{
     
     @Input("send-code")
     sendCode(
-      @Args(0)code: string,
+      @Args(0)codeData:{
+        channelID: string,
+        code: string
+      },
       socket: Socket,
       session: SocketSession
     ): void {
-      const user: User = session.get("user");
-      if (user.currentCodeChannel) {
-        this.code.set(user.currentCodeChannel,code);
-        this.nsp.emit(
-          `${user.currentCodeChannel}-code`,
-           this.getDatafromCodeChannel(user.currentCodeChannel)
-        );
-      }
+      this.code.set(codeData.channelID,codeData.code);  
+      this.nsp.emit(
+        `${codeData.channelID}-code`,
+        this.getDatafromCodeChannel(codeData.channelID)
+      );
+  
     }
 
     getDatafromCodeChannel(
