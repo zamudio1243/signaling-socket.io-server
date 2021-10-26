@@ -207,7 +207,7 @@ export class CodeChannelSocketService{
         `${codeData.channelID}-code`,
         this.getDatafromCodeChannel(codeData.channelID)
       );
-  
+
     }
 
     getDatafromCodeChannel(

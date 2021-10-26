@@ -93,9 +93,9 @@ export class VoiceChannelSocketService{
         ));
       }
       user.currentVoiceChannel = voiceChannelID;
-      console.log(`${voiceChannelID}-users-in-voice-channel`);
-      this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
-      socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
+      socket.join(voiceChannelID);
+      socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID, socket.id));
+      socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
     }
 
     @Input(EventName.LEAVE_VOICE_CHANNEL)
@@ -114,7 +114,7 @@ export class VoiceChannelSocketService{
           if(voiceChannel.delete(user.socketID)){
             console.log("Usuario eliminado");
           }
-          this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
+          //this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
           if(voiceChannel.size === 0){
             if(this.voiceChannels.delete(user.currentVoiceChannel)){
               console.log("Voice channel cerrado");
@@ -134,7 +134,7 @@ export class VoiceChannelSocketService{
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
         console.log(`User ${user.uid} is sending a signal to ${payload.userIDToSignal}`);
-        this.nsp.emit(`${payload.userIDToSignal}-${ResponseEventName.USER_JOINED}`,payload);
+        this.nsp.to(payload.userIDToSignal!).emit(ResponseEventName.USER_JOINED,payload)
       }
     }
 
@@ -147,7 +147,7 @@ export class VoiceChannelSocketService{
       console.log(EventName.RETURNING_SIGNAL);
       if(user.currentVoiceChannel){
         console.log(`User ${user.uid} is returning a signal to ${payload.callerID}`);
-        this.nsp.emit(`${payload.callerID}-${ResponseEventName.RECEIVING_RETURNED_SIGNAL}`,payload);
+        this.nsp.to(payload.callerID).emit(ResponseEventName.RECEIVING_RETURNED_SIGNAL,payload)
       }
     }
 
@@ -159,7 +159,7 @@ export class VoiceChannelSocketService{
    ): void {
     const user: User = session.get("user");
     socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
-    this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
+    socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID,socket.id));
    }
 
     /**
@@ -167,11 +167,18 @@ export class VoiceChannelSocketService{
      * @param voiceChannelID ID del canal de voz
      * @returns JSON {Map<string,string>}
      */
-    public getUsersInVoiceChannel(voiceChannelID: string): any{
+    public getUsersInVoiceChannel(voiceChannelID: string, userID: string): any{
       if(this.voiceChannels.has(voiceChannelID)){
-        const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
-        console.table(result);
-        return result;
+        const response: Map<string,User> = new Map<string,User>();
+        const voiceChannel = this.voiceChannels.get(voiceChannelID);
+        if (voiceChannel) {
+          voiceChannel.forEach((v,k)=> {
+            if (k !== userID) {
+              response.set(k,v)
+            }
+          });
+        }
+        return Object.fromEntries(response)
       }
       else{
         return {};
