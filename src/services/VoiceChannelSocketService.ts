@@ -94,7 +94,7 @@ export class VoiceChannelSocketService{
       }
       user.currentVoiceChannel = voiceChannelID;
       socket.join(voiceChannelID);
-      socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID, socket.id));
+      this.nsp.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID, socket.id));
       socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
     }
 
@@ -178,6 +178,8 @@ export class VoiceChannelSocketService{
             }
           });
         }
+        console.log(response);
+        
         return Object.fromEntries(response)
       }
       else{
