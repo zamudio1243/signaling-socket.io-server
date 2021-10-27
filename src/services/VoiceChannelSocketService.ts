@@ -169,18 +169,8 @@ export class VoiceChannelSocketService{
      */
     public getUsersInVoiceChannel(voiceChannelID: string, userID: string): any{
       if(this.voiceChannels.has(voiceChannelID)){
-        const response: Map<string,User> = new Map<string,User>();
-        const voiceChannel = this.voiceChannels.get(voiceChannelID);
-        if (voiceChannel) {
-          voiceChannel.forEach((v,k)=> {
-            if (k !== userID) {
-              response.set(k,v)
-            }
-          });
-        }
-        console.log(response);
-        
-        return Object.fromEntries(response)
+        const voiceChannel = this.voiceChannels.get(voiceChannelID)!;
+        return Object.fromEntries(voiceChannel)
       }
       else{
         return {};
