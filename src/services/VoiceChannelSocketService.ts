@@ -73,7 +73,7 @@ export class VoiceChannelSocketService{
       const user: User = session.get("user");      
 
       if( user.currentVoiceChannel === voiceChannelID) return;
-      
+
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
         this.leaveRoom(session,socket);
@@ -92,7 +92,7 @@ export class VoiceChannelSocketService{
       }
       user.currentVoiceChannel = voiceChannelID;
       socket.join(voiceChannelID);
-      this.nsp.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID, socket.id));
+      this.nsp.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
       socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
     }
 
@@ -112,14 +112,14 @@ export class VoiceChannelSocketService{
           if(voiceChannel.delete(user.socketID)){
             console.log("Usuario eliminado");
           }
-          //this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
+          this.nsp.to(user.currentVoiceChannel).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(user.currentVoiceChannel));
           if(voiceChannel.size === 0){
             if(this.voiceChannels.delete(user.currentVoiceChannel)){
               console.log("Voice channel cerrado");
             }
           }
           user.currentVoiceChannel= undefined;
-          socket.emit(`${ResponseEventName.USER_STATUS}`,{});
+          socket.emit(ResponseEventName.USER_STATUS,{});
         }
       }
     }
@@ -157,7 +157,7 @@ export class VoiceChannelSocketService{
    ): void {
     const user: User = session.get("user");
     socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
-    socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID,socket.id));
+    socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
     /**
@@ -165,11 +165,9 @@ export class VoiceChannelSocketService{
      * @param voiceChannelID ID del canal de voz
      * @returns JSON {Map<string,string>}
      */
-    public getUsersInVoiceChannel(voiceChannelID: string, userID: string): any{
+    public getUsersInVoiceChannel(voiceChannelID: string): any{
       if(this.voiceChannels.has(voiceChannelID)){
-        const voiceChannel = this.voiceChannels.get(voiceChannelID)!;
-        console.log(voiceChannel);
-        
+        const voiceChannel = this.voiceChannels.get(voiceChannelID)!;        
         return Object.fromEntries(voiceChannel)
       }
       else{
