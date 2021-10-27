@@ -73,8 +73,6 @@ export class VoiceChannelSocketService{
       const user: User = session.get("user");      
 
       if( user.currentVoiceChannel === voiceChannelID) return;
-
-      
       
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
@@ -170,6 +168,8 @@ export class VoiceChannelSocketService{
     public getUsersInVoiceChannel(voiceChannelID: string, userID: string): any{
       if(this.voiceChannels.has(voiceChannelID)){
         const voiceChannel = this.voiceChannels.get(voiceChannelID)!;
+        console.log(voiceChannel);
+        
         return Object.fromEntries(voiceChannel)
       }
       else{
