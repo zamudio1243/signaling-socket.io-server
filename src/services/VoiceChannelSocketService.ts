@@ -1,5 +1,5 @@
 
-import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args} from "@tsed/socketio";
+import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args, Emit} from "@tsed/socketio";
 import { SignalPayload } from "../models/signal_payload";
 import { User } from "../models/user";
 import { EventName } from "../utils/event_name";
@@ -34,6 +34,7 @@ export class VoiceChannelSocketService{
           socketID: socket.id,
           uid: socket.handshake.auth.uid
         });
+        socket.join(socket.handshake.auth.uid);
       }
       else{
         socket.disconnect();
@@ -57,12 +58,14 @@ export class VoiceChannelSocketService{
      * @returns Usuarios dentro del canal de voz
      */
     @Input(EventName.JOIN_VOICE_CHANNEL)
+    @Emit(ResponseEventName.JOINED_USERS)
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
        @Socket socket: Socket
-    ): void {
+    ): any {
       this.joinSocketToVoiceChannel(voiceChannelID,session,socket);
+      return this.getUsersInVoiceChannel(voiceChannelID);
     }
 
     joinSocketToVoiceChannel(
@@ -94,8 +97,6 @@ export class VoiceChannelSocketService{
       socket.join(voiceChannelID);
       this.nsp.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
       socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
-      console.log(this.voiceChannels);
-      
     }
 
     @Input(EventName.LEAVE_VOICE_CHANNEL)
@@ -157,11 +158,9 @@ export class VoiceChannelSocketService{
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
-      console.log(EventName.RETURNING_SIGNAL);
-      if(user.currentVoiceChannel){
-        console.log(`User ${user.uid} is returning a signal to ${payload.callerID}`);
-        this.nsp.to(payload.callerID).emit(ResponseEventName.RECEIVING_RETURNED_SIGNAL,payload)
-      }
+      console.log(`user.uid ${user.uid} is returning a signal to ${payload.callerID}`);
+      payload.userIDToSignal = user.uid
+      this.nsp.to(payload.callerID).emit(ResponseEventName.RECEIVING_RETURNED_SIGNAL, payload)
     }
 
     @Input(EventName.EMIT_USERS)
@@ -171,10 +170,8 @@ export class VoiceChannelSocketService{
       @SocketSession session: SocketSession
    ): void {
     const user: User = session.get("user");
-    socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
-    
-    
-    socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
+    socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
+    socket.emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
     /**

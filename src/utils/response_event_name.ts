@@ -5,6 +5,7 @@ export enum ResponseEventName{
     GET_COORDINAES = 'coordinates',
 
     //VoiceChannel
+    JOINED_USERS='joined-users',
     ALL_USERS = 'all-users',
     USER_STATUS = 'user-status',
     RECEIVING_RETURNED_SIGNAL = 'receiving returned signal',
