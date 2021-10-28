@@ -94,6 +94,8 @@ export class VoiceChannelSocketService{
       socket.join(voiceChannelID);
       this.nsp.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
       socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
+      console.log(this.voiceChannels);
+      
     }
 
     @Input(EventName.LEAVE_VOICE_CHANNEL)
