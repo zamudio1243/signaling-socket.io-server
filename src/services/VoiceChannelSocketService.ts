@@ -62,10 +62,10 @@ export class VoiceChannelSocketService{
        @SocketSession session: SocketSession,
        @Socket socket: Socket
     ): void {
-      this.joinRoom(voiceChannelID,session,socket);
+      this.joinSocketToVoiceChannel(voiceChannelID,session,socket);
     }
 
-    joinRoom(
+    joinSocketToVoiceChannel(
       voiceChannelID: string,
       session: SocketSession,
       socket: Socket
@@ -79,13 +79,13 @@ export class VoiceChannelSocketService{
         this.leaveRoom(session,socket);
       }
       if(voiceChannel){
-        voiceChannel.set(user.socketID, user);
+        voiceChannel.set(user.uid, user);
       }
       else{
         this.voiceChannels.set(voiceChannelID,new Map<string,User>(
           [
             [
-              user.socketID, user
+              user.uid, user
             ]
           ]
         ));
@@ -111,7 +111,7 @@ export class VoiceChannelSocketService{
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
         if(voiceChannel){
-          if(voiceChannel.delete(user.socketID)){
+          if(voiceChannel.delete(user.uid)){
             console.log("Usuario eliminado");
           }
           this.nsp.to(user.currentVoiceChannel).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(user.currentVoiceChannel));
@@ -138,6 +138,19 @@ export class VoiceChannelSocketService{
       }
     }
 
+
+    @Input(EventName.JOIN_ROOM)
+    joinRoom(
+      @Args(0) voiceChannelID: string,
+      @Socket socket: Socket
+    ): void {
+      this.joinSocketToRoom(voiceChannelID,socket)
+    }
+
+    joinSocketToRoom(voiceChannelID: string, socket: Socket): void {
+      socket.join(voiceChannelID);
+    }
+
     @Input(EventName.RETURNING_SIGNAL)
     returningSignal(
       @Args(0) payload: SignalPayload,
@@ -159,6 +172,8 @@ export class VoiceChannelSocketService{
    ): void {
     const user: User = session.get("user");
     socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
+    
+    
     socket.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
