@@ -1,5 +1,5 @@
 
-import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args} from "@tsed/socketio";
+import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args, Emit} from "@tsed/socketio";
 import { SignalPayload } from "../models/signal_payload";
 import { User } from "../models/user";
 import { EventName } from "../utils/event_name";
@@ -34,6 +34,7 @@ export class VoiceChannelSocketService{
           socketID: socket.id,
           uid: socket.handshake.auth.uid
         });
+        socket.join(socket.handshake.auth.uid);
       }
       else{
         socket.disconnect();
@@ -57,15 +58,17 @@ export class VoiceChannelSocketService{
      * @returns Usuarios dentro del canal de voz
      */
     @Input(EventName.JOIN_VOICE_CHANNEL)
+    @Emit(ResponseEventName.JOINED_USERS)
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
        @Socket socket: Socket
-    ): void {
-      this.joinRoom(voiceChannelID,session,socket);
+    ): any {
+      this.joinSocketToVoiceChannel(voiceChannelID,session,socket);
+      return this.getUsersInVoiceChannel(voiceChannelID);
     }
 
-    joinRoom(
+    joinSocketToVoiceChannel(
       voiceChannelID: string,
       session: SocketSession,
       socket: Socket
@@ -74,8 +77,6 @@ export class VoiceChannelSocketService{
 
       if( user.currentVoiceChannel === voiceChannelID) return;
 
-      
-      
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
 
       if(user.currentVoiceChannel){
@@ -90,7 +91,7 @@ export class VoiceChannelSocketService{
         this.voiceChannels.set(voiceChannelID,new Map<string,User>(
           [
             [
-              user.socketID, user
+              user.uid, user
             ]
           ]
         ));
@@ -115,10 +116,10 @@ export class VoiceChannelSocketService{
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
         if(voiceChannel){
-          if(voiceChannel.delete(user.socketID)){
+          if(voiceChannel.delete(user.uid)){
             console.log("Usuario eliminado");
           }
-          this.nsp.emit(`${user.currentVoiceChannel}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(user.currentVoiceChannel));
+          this.nsp.to(user.currentVoiceChannel).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(user.currentVoiceChannel));
           if(voiceChannel.size === 0){
             if(this.voiceChannels.delete(user.currentVoiceChannel)){
               console.log("Voice channel cerrado");
@@ -165,8 +166,21 @@ export class VoiceChannelSocketService{
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
         console.log(`User ${user.uid} is sending a signal to ${payload.userIDToSignal}`);
-        this.nsp.emit(`${payload.userIDToSignal}-${ResponseEventName.USER_JOINED}`,payload);
+        this.nsp.to(payload.userIDToSignal!).emit(ResponseEventName.USER_JOINED,payload)
       }
+    }
+
+
+    @Input(EventName.JOIN_ROOM)
+    joinRoom(
+      @Args(0) voiceChannelID: string,
+      @Socket socket: Socket
+    ): void {
+      this.joinSocketToRoom(voiceChannelID,socket)
+    }
+
+    joinSocketToRoom(voiceChannelID: string, socket: Socket): void {
+      socket.join(voiceChannelID);
     }
 
     @Input(EventName.RETURNING_SIGNAL)
@@ -175,11 +189,9 @@ export class VoiceChannelSocketService{
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
-      console.log(EventName.RETURNING_SIGNAL);
-      if(user.currentVoiceChannel){
-        console.log(`User ${user.uid} is returning a signal to ${payload.callerID}`);
-        this.nsp.emit(`${payload.callerID}-${ResponseEventName.RECEIVING_RETURNED_SIGNAL}`,payload);
-      }
+      console.log(`user.uid ${user.uid} is returning a signal to ${payload.callerID}`);
+      payload.userIDToSignal = user.uid
+      this.nsp.to(payload.callerID).emit(ResponseEventName.RECEIVING_RETURNED_SIGNAL, payload)
     }
 
     @Input(EventName.EMIT_USERS)
@@ -189,8 +201,8 @@ export class VoiceChannelSocketService{
       @SocketSession session: SocketSession
    ): void {
     const user: User = session.get("user");
-    socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
-    this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
+    socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
+    socket.emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
    }
 
     /**
@@ -200,9 +212,8 @@ export class VoiceChannelSocketService{
      */
     public getUsersInVoiceChannel(voiceChannelID: string): any{
       if(this.voiceChannels.has(voiceChannelID)){
-        const result = Object.fromEntries(this.voiceChannels.get(voiceChannelID)!)
-        console.table(result);
-        return result;
+        const voiceChannel = this.voiceChannels.get(voiceChannelID)!;        
+        return Object.fromEntries(voiceChannel)
       }
       else{
         return {};

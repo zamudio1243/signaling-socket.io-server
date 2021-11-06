@@ -1,4 +1,4 @@
-export enum EventName{
+export enum EventName {
 
   //CodeChannel
   JOIN_CODE_CHANNEL = 'join-code-channel',

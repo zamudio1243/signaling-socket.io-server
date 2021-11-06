@@ -207,7 +207,10 @@ export class CodeChannelSocketService{
     
     @Input(EventName.SEND_CODE)
     sendCode(
-      @Args(0)code: string,
+      @Args(0)codeData:{
+        channelID: string,
+        code: string
+      },
       socket: Socket,
       session: SocketSession
     ): void {
@@ -221,6 +224,12 @@ export class CodeChannelSocketService{
       }
       this.code.set(codeData.channelID,codeData.code);  
       socket.to(codeData.channelID).emit(ResponseEventName.CODE,this.getDatafromCodeChannel(codeData.channelID));
+      this.code.set(codeData.channelID,codeData.code);  
+      this.nsp.emit(
+        `${codeData.channelID}-code`,
+        this.getDatafromCodeChannel(codeData.channelID)
+      );
+
     }
 
     getDatafromCodeChannel(
