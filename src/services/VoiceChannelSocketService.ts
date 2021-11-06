@@ -77,11 +77,14 @@ export class VoiceChannelSocketService{
       
       
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
+
       if(user.currentVoiceChannel){
         this.leaveRoom(session,socket);
       }
       if(voiceChannel){
         voiceChannel.set(user.socketID, user);
+        if (voiceChannel.has(user.uid)) return;
+        voiceChannel.set(user.uid, user);
       }
       else{
         this.voiceChannels.set(voiceChannelID,new Map<string,User>(
@@ -93,9 +96,10 @@ export class VoiceChannelSocketService{
         ));
       }
       user.currentVoiceChannel = voiceChannelID;
-      console.log(`${voiceChannelID}-users-in-voice-channel`);
-      this.nsp.emit(`${voiceChannelID}-${ResponseEventName.USERS_IN_VOICE_CHANNEL}`,this.getUsersInVoiceChannel(voiceChannelID));
-      socket.emit(`${ResponseEventName.USER_STATUS}`,{channelID: user.currentVoiceChannel});
+      socket.join(voiceChannelID);
+      this.nsp.to(voiceChannelID).emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
+      socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
+      console.table(this.voiceChannels);
     }
 
     @Input(EventName.LEAVE_VOICE_CHANNEL)
@@ -121,10 +125,37 @@ export class VoiceChannelSocketService{
             }
           }
           user.currentVoiceChannel= undefined;
-          socket.emit(`${ResponseEventName.USER_STATUS}`,{});
+          socket.emit(ResponseEventName.USER_STATUS,{});
+          
+          //Esto es nuevo
+          this.nsp.to(user.uid).emit(ResponseEventName.USER_STATUS,{});
         }
       }
     }
+
+
+    @Input(EventName.JOIN_ROOM)
+    joinRoom(
+      @Args(0) voiceChannelID: string,
+      @Socket socket: Socket
+    ): void {
+      this.joinSocketToRoom(voiceChannelID,socket);
+    }
+
+    joinSocketToRoom(voiceChannelID: string, socket: Socket): void {
+      socket.join(voiceChannelID);
+    }
+
+    @Input(EventName.EMIT_USERS)
+    emitUsers(
+      @Args(0) voiceChannelID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+   ): void {
+    const user: User = session.get("user");
+    socket.emit(ResponseEventName.USER_STATUS,{channelID: user.currentVoiceChannel});
+    socket.emit(ResponseEventName.ALL_USERS,this.getUsersInVoiceChannel(voiceChannelID));
+   }
 
     @Input(EventName.SENDING_SIGNAL)
     sendingSignal(

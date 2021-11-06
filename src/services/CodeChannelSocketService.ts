@@ -1,6 +1,8 @@
-import { Args, Input, Namespace, Nsp, Socket, SocketService, SocketSession} from "@tsed/socketio";
+import { Args, Emit, Input, Namespace, Nsp, Socket, SocketService, SocketSession} from "@tsed/socketio";
 import { CursorCoordinates } from "../models/coordinates";
 import { User } from "../models/user";
+import { EventName } from "../utils/event_name";
+import { ResponseEventName } from "../utils/response_event_name";
 
 @SocketService("/codeChannel")
 export class CodeChannelSocketService{
@@ -32,6 +34,7 @@ export class CodeChannelSocketService{
           socketID: socket.id,
           uid: socket.handshake.auth.uid
         });
+        socket.join(socket.handshake.auth.uid)
       }
       else{
         socket.disconnect();
@@ -54,65 +57,59 @@ export class CodeChannelSocketService{
      * @param session sesión del Socket
      * @returns Usuarios dentro del canal de código
      */
-    @Input("join-code-channel")
+    @Input(EventName.JOIN_CODE_CHANNEL)
+    @Emit(ResponseEventName.CODE_JOINED_USERS)
     joinCodeChannel(
        @Args(0) codeChannelID: string,
        @SocketSession session: SocketSession,
        @Socket socket: Socket
-    ): void {
-      this.joinRoom(codeChannelID,session,socket);
+    ): any {
+      this.joinSocketToCodeChannel(codeChannelID,session,socket);
+      return this.getUsersInCodeChannel(codeChannelID);
     }
 
-    joinRoom(
+    joinSocketToCodeChannel(
       codeChannelID: string,
       session: SocketSession,
       socket: Socket
     ): void {
       const user: User = session.get("user");
+
       if( user.currentCodeChannel === codeChannelID) return;
 
       const codeChannel = this.codeChannels.get(codeChannelID);
+
       if(user.currentCodeChannel){
         this.leaveRoom(session,socket);
       }
       if(codeChannel){
-        codeChannel.set(user.socketID, user);
+        if(codeChannel.has(user.uid)) return;
+
+        codeChannel.set(user.uid,user);
       }
       else{
         this.codeChannels.set(codeChannelID,new Map<string,User>(
           [
             [
-              user.socketID, user
+              user.uid, user
             ]
           ]
         ));
       }
       user.currentCodeChannel = codeChannelID;
-      console.log(`${codeChannelID}-users-in-code-channel`);
-      this.nsp.emit(`${codeChannelID}-users-in-code-channel`,this.getUsersInCodeChannel(codeChannelID));
+      socket.join(codeChannelID);
+      this.nsp.to(codeChannelID).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
       socket.emit('user-status',{channelID: user.currentCodeChannel});
+      console.table(this.codeChannels);
     }
 
-    @Input("leave-code-channel")
+    @Input(EventName.LEAVE_CODE_CHANNEL)
     leaveCodeChannel(
        @SocketSession session: SocketSession,
        @Socket socket: Socket
     ): void {
       this.leaveRoom(session,socket);
     }
-
-    @Input("emit-users")
-    emitUsers(
-      @Args(0) codeChannelID: string,
-      @Socket socket: Socket,
-      @SocketSession session: SocketSession
-   ): void {
-    const user: User = session.get("user");
-    socket.emit('user-status',{channelID: user.currentCodeChannel});
-    this.nsp.emit(`${codeChannelID}-users-in-code-channel`,this.getUsersInCodeChannel(codeChannelID));
-   }
-
-
 
     leaveRoom(session: SocketSession, socket: Socket){
       const user: User = session.get("user");
@@ -122,33 +119,47 @@ export class CodeChannelSocketService{
           if(codeChannel.delete(user.socketID)){
             console.log("Usuario eliminado");
           }
-          this.nsp.emit(`${user.currentCodeChannel}-users-in-code-channel`,this.getUsersInCodeChannel(user.currentCodeChannel));
+          this.nsp.to(user.currentCodeChannel).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(user.currentCodeChannel));
           if(codeChannel.size === 0){
             if(this.codeChannels.delete(user.currentCodeChannel)){
               console.log("Code channel cerrado");
             }
           }
           user.currentCodeChannel= undefined;
-          socket.emit('user-status',{});
+          socket.emit(ResponseEventName.CODE_USER_STATUS,{});
+
+          this.nsp.to(user.uid).emit(ResponseEventName.CODE_USER_STATUS,{});
         }
       }
     }
 
-    /**
-     * Retorna la lista de usuarios
-     * @param codeChannelID ID del canal de código
-     * @returns JSON {Map<string,string>}
-     */
-     public getUsersInCodeChannel(codeChannelID: string): any{
-      if(this.codeChannels.has(codeChannelID)){
-        const result = Object.fromEntries(this.codeChannels.get(codeChannelID)!);
-        console.table(result);
-        return result;
-      }
-      else{
-        return {};
-      }
+
+
+    @Input(EventName.CODE_JOIN_ROOM)
+    joinRoom(
+      @Args(0) codeChannelID: string,
+      @Socket socket: Socket
+    ): void {
+      this.joinSocketToRoom(codeChannelID,socket);
     }
+
+    joinSocketToRoom(codeChannelID: string, socket: Socket) {
+      socket.join(codeChannelID);
+    }
+
+    @Input(EventName.CODE_EMIT_USERS)
+    emitUsers(
+      @Args(0) codeChannelID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+   ): void {
+    const user: User = session.get("user");
+    socket.emit(ResponseEventName.CODE_USER_STATUS,{channelID: user.currentCodeChannel});
+    socket.emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
+   }
+
+
+    
 
     /**
      * Evia coordenadas de un usuario en el canal de codigo 
@@ -156,7 +167,7 @@ export class CodeChannelSocketService{
      * @param session sesión del Socket
      * @returns coordinadas del usuario en el canal de codigo
      */
-     @Input("sent-coordinates")
+     @Input(EventName.SENT_COORDINATES)
      sentCoordinates(
         @Args(0) coordinates: CursorCoordinates,
         @SocketSession session: SocketSession,
@@ -176,7 +187,6 @@ export class CodeChannelSocketService{
         const cursorCoordinates = currentCoordinates?.find((cursor)=> {
             return cursor.userID === coordinates.userID
         });
-
         if (cursorCoordinates) {
           cursorCoordinates.x = coordinates.x
           cursorCoordinates.y = coordinates.y
@@ -190,10 +200,12 @@ export class CodeChannelSocketService{
       else{
         this.cursorPointers.set(user.currentCodeChannel!,[coordinates] )
       }
-      this.nsp.emit(`${user.currentCodeChannel}-coordinates`,this.cursorPointers.get(user.currentCodeChannel!));
+      if (user.currentCodeChannel) {
+        this.nsp.to(user.currentVoiceChannel!).emit(ResponseEventName.COORDINAES,this.cursorPointers.get(user.currentCodeChannel!));
+      }
     }
     
-    @Input("send-code")
+    @Input(EventName.SEND_CODE)
     sendCode(
       @Args(0)code: string,
       socket: Socket,
@@ -207,6 +219,8 @@ export class CodeChannelSocketService{
            this.getDatafromCodeChannel(user.currentCodeChannel)
         );
       }
+      this.code.set(codeData.channelID,codeData.code);  
+      socket.to(codeData.channelID).emit(ResponseEventName.CODE,this.getDatafromCodeChannel(codeData.channelID));
     }
 
     getDatafromCodeChannel(
@@ -217,6 +231,21 @@ export class CodeChannelSocketService{
       }
       else{
         return ''
+      }
+    }
+
+    /**
+     * Retorna la lista de usuarios
+     * @param codeChannelID ID del canal de código
+     * @returns JSON {Map<string,string>}
+     */
+     public getUsersInCodeChannel(codeChannelID: string): any{
+      if(this.codeChannels.has(codeChannelID)){
+        const result = Object.fromEntries(this.codeChannels.get(codeChannelID)!);
+        return result;
+      }
+      else{
+        return {};
       }
     }
   }
