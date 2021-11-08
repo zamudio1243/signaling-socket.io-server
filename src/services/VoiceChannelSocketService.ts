@@ -123,6 +123,7 @@ export class VoiceChannelSocketService{
           }
           user.currentVoiceChannel= undefined;
           socket.emit(ResponseEventName.USER_STATUS,{});
+          this.nsp.to(user.uid).emit(ResponseEventName.USER_STATUS,{});
         }
       }
     }
@@ -189,4 +190,3 @@ export class VoiceChannelSocketService{
       }
     }
   }
-
