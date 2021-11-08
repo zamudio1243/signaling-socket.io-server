@@ -211,25 +211,17 @@ export class CodeChannelSocketService{
         channelID: string,
         code: string
       },
-      socket: Socket,
-      session: SocketSession
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
       if (user.currentCodeChannel) {
-        this.code.set(user.currentCodeChannel,code);
-        this.nsp.emit(
-          `${user.currentCodeChannel}-code`,
-           this.getDatafromCodeChannel(user.currentCodeChannel)
-        );
+        this.code.set(codeData.channelID,codeData.code); 
+        console.log(`User: ${user.uid} is sending code to ${codeData.channelID}`);
+         
+        socket.to(codeData.channelID).emit(ResponseEventName.CODE,this.getDatafromCodeChannel(codeData.channelID));  
       }
-      this.code.set(codeData.channelID,codeData.code);  
-      socket.to(codeData.channelID).emit(ResponseEventName.CODE,this.getDatafromCodeChannel(codeData.channelID));
-      this.code.set(codeData.channelID,codeData.code);  
-      this.nsp.emit(
-        `${codeData.channelID}-code`,
-        this.getDatafromCodeChannel(codeData.channelID)
-      );
-
+     
     }
 
     getDatafromCodeChannel(
