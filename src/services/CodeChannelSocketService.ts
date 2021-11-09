@@ -201,7 +201,8 @@ export class CodeChannelSocketService{
         this.cursorPointers.set(user.currentCodeChannel!,[coordinates] )
       }
       if (user.currentCodeChannel) {
-        this.nsp.to(user.currentVoiceChannel!).emit(ResponseEventName.COORDINAES,this.cursorPointers.get(user.currentCodeChannel!));
+        const channel = user.currentCodeChannel;
+        this.nsp.to(channel).emit(ResponseEventName.COORDINAES,this.cursorPointers.get(channel));
       }
     }
     
@@ -217,7 +218,7 @@ export class CodeChannelSocketService{
       const user: User = session.get("user");
       if (user.currentCodeChannel) {
         this.code.set(codeData.channelID,codeData.code); 
-        console.log(`User: ${user.uid} is sending code to ${codeData.channelID}`);
+        
          
         socket.to(codeData.channelID).emit(ResponseEventName.CODE,this.getDatafromCodeChannel(codeData.channelID));  
       }
