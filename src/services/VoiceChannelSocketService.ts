@@ -11,7 +11,7 @@ export class VoiceChannelSocketService{
     @Nsp nsp!: Namespace;
 
     /**
-     * ['voiceChannelID' => ['socketID' => 'User']]
+     * ['voiceChannelID' => ['uid' => 'User']]
      * @type {Map<Map<string,string}
      */
     public voiceChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
@@ -135,7 +135,6 @@ export class VoiceChannelSocketService{
     ): void {
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
-        console.log(`User ${user.uid} is sending a signal to ${payload.userIDToSignal}`);
         this.nsp.to(payload.userIDToSignal!).emit(ResponseEventName.USER_JOINED,payload)
       }
     }
@@ -159,7 +158,6 @@ export class VoiceChannelSocketService{
       @SocketSession session: SocketSession
     ): void {
       const user: User = session.get("user");
-      console.log(`user.uid ${user.uid} is returning a signal to ${payload.callerID}`);
       payload.userIDToSignal = user.uid
       this.nsp.to(payload.callerID).emit(ResponseEventName.RECEIVING_RETURNED_SIGNAL, payload)
     }
