@@ -10,7 +10,7 @@ export class CodeChannelSocketService{
     @Nsp nsp!: Namespace;
 
     /**
-     * ['codeChannelID' => ['socketID' => 'User']]
+     * ['codeChannelID' => ['uid' => 'User']]
      * @type {Map<Map<string,string}
      */
     public codeChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
@@ -99,7 +99,7 @@ export class CodeChannelSocketService{
       user.currentCodeChannel = codeChannelID;
       socket.join(codeChannelID);
       this.nsp.to(codeChannelID).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
-      socket.emit('user-status',{channelID: user.currentCodeChannel});
+      socket.emit(ResponseEventName.CODE_USER_STATUS,{channelID: user.currentCodeChannel});
       console.table(this.codeChannels);
     }
 
@@ -111,17 +111,18 @@ export class CodeChannelSocketService{
       this.leaveRoom(session,socket);
     }
 
-    leaveRoom(session: SocketSession, socket: Socket){
+    leaveRoom(session: SocketSession, socket: Socket){     
       const user: User = session.get("user");
-      if(user.currentCodeChannel){
-        const codeChannel = this.codeChannels.get(user.currentCodeChannel);
+      const currentCodeChannel = user.currentCodeChannel;
+      if(currentCodeChannel){
+        const codeChannel = this.codeChannels.get(currentCodeChannel);        
         if(codeChannel){
-          if(codeChannel.delete(user.socketID)){
+          if(codeChannel.delete(user.uid)){
             console.log("Usuario eliminado");
           }
-          this.nsp.to(user.currentCodeChannel).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(user.currentCodeChannel));
+          this.nsp.to(currentCodeChannel).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(currentCodeChannel));
           if(codeChannel.size === 0){
-            if(this.codeChannels.delete(user.currentCodeChannel)){
+            if(this.codeChannels.delete(currentCodeChannel)){
               console.log("Code channel cerrado");
             }
           }
