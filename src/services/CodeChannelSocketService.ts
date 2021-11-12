@@ -15,6 +15,11 @@ export class CodeChannelSocketService{
      */
     public codeChannels: Map<string, Map<string,User>> = new Map<string, Map<string,User>> ();
 
+    /**
+     * ['codeChannelID' => 'uid']
+     * @type {Map<Map<string,string}
+     */
+    public drivers: Map<string,string> = new Map<string,string>();
     public cursorPointers: Map<string, CursorCoordinates[]> = new Map<string, CursorCoordinates[]>();
     public code: Map<string, string> = new Map<string, string> ();
     /**
@@ -95,10 +100,12 @@ export class CodeChannelSocketService{
             ]
           ]
         ));
+        this.drivers.set(codeChannelID,user.uid);
       }
       user.currentCodeChannel = codeChannelID;
       socket.join(codeChannelID);
       this.nsp.to(codeChannelID).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
+      this.nsp.to(codeChannelID).emit(ResponseEventName.DRIVER,this.getDriver(codeChannelID));
       socket.emit(ResponseEventName.CODE_USER_STATUS,{channelID: user.currentCodeChannel});
       console.table(this.codeChannels);
     }
@@ -157,13 +164,12 @@ export class CodeChannelSocketService{
     const user: User = session.get("user");
     socket.emit(ResponseEventName.CODE_USER_STATUS,{channelID: user.currentCodeChannel});
     socket.emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
+    socket.emit(ResponseEventName.DRIVER,this.getDriver(codeChannelID));
    }
 
 
-    
-
     /**
-     * Evia coordenadas de un usuario en el canal de codigo 
+     * Envia coordenadas de un usuario en el canal de codigo 
      * @param coordinates coordinadas del usuario 
      * @param session sesión del Socket
      * @returns coordinadas del usuario en el canal de codigo
@@ -223,7 +229,46 @@ export class CodeChannelSocketService{
          
         socket.to(codeData.channelID).emit(ResponseEventName.CODE,this.getDatafromCodeChannel(codeData.channelID));  
       }
-     
+    }
+
+
+    @Input(EventName.REQUEST_DRIVER)
+    eventRequetDriver(
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+    ): void{
+      this.requestDriver(socket,session);
+    }
+
+    requestDriver(
+      socket: Socket,
+      session: SocketSession
+    ): void {
+      const user: User = session.get("user");
+      if (user.currentCodeChannel){
+        socket.to(this.getDriver(user.currentCodeChannel)).emit(ResponseEventName.REQUEST_FROM_NAV, user.uid);
+      }
+    }
+
+
+    @Input(EventName.ACCEPT_REQUEST)
+    eventAcceptRequest(
+      @Args(0) newdriverID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+    ): void{
+      
+      const user: User = session.get("user");
+      if(user.currentCodeChannel){
+        this.changeDriver(user.currentCodeChannel, newdriverID);
+      }
+    }
+
+    changeDriver(codeChannelID: string, newdriverID: string): void {
+      if(this.drivers.has(codeChannelID)){
+        this.drivers.set(codeChannelID, newdriverID);
+        this.nsp.to(codeChannelID).emit(ResponseEventName.DRIVER,this.getDriver(codeChannelID));
+      }
     }
 
     getDatafromCodeChannel(
@@ -236,6 +281,7 @@ export class CodeChannelSocketService{
         return ''
       }
     }
+
 
     /**
      * Retorna la lista de usuarios
@@ -250,5 +296,16 @@ export class CodeChannelSocketService{
       else{
         return {};
       }
+    }
+
+    public getDriver(codeChannelID: string): string{
+      
+      if (this.drivers.has(codeChannelID)) {
+        return this.drivers.get(codeChannelID)!;
+      }
+      else{
+        return '';
+      }
+
     }
   }
