@@ -17,5 +17,5 @@ export enum EventName {
   RETURNING_SIGNAL = 'returning-signal',
   EMIT_USERS = 'emit-users',
   JOIN_ROOM = 'join-room',
-  
+  EMIT_DRIVER = "EMIT_DRIVER"
 }

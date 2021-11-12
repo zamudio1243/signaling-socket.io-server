@@ -164,13 +164,12 @@ export class CodeChannelSocketService{
     const user: User = session.get("user");
     socket.emit(ResponseEventName.CODE_USER_STATUS,{channelID: user.currentCodeChannel});
     socket.emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
+    socket.emit(ResponseEventName.DRIVER,this.getDriver(codeChannelID));
    }
 
 
-    
-
     /**
-     * Evia coordenadas de un usuario en el canal de codigo 
+     * Envia coordenadas de un usuario en el canal de codigo 
      * @param coordinates coordinadas del usuario 
      * @param session sesión del Socket
      * @returns coordinadas del usuario en el canal de codigo
@@ -258,6 +257,7 @@ export class CodeChannelSocketService{
       @Socket socket: Socket,
       @SocketSession session: SocketSession
     ): void{
+      
       const user: User = session.get("user");
       if(user.currentCodeChannel){
         this.changeDriver(user.currentCodeChannel, newdriverID);
@@ -299,6 +299,7 @@ export class CodeChannelSocketService{
     }
 
     public getDriver(codeChannelID: string): string{
+      
       if (this.drivers.has(codeChannelID)) {
         return this.drivers.get(codeChannelID)!;
       }
