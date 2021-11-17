@@ -88,7 +88,7 @@ export class CodeChannelSocketService{
         this.leaveRoom(session,socket);
       }
       if(codeChannel){
-        if(codeChannel.has(user.uid)) return;
+        //if(codeChannel.has(user.uid)) return;
 
         codeChannel.set(user.uid,user);
       }
@@ -107,7 +107,6 @@ export class CodeChannelSocketService{
       this.nsp.to(codeChannelID).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(codeChannelID));
       this.nsp.to(codeChannelID).emit(ResponseEventName.DRIVER,this.getDriver(codeChannelID));
       socket.emit(ResponseEventName.CODE_USER_STATUS,{channelID: user.currentCodeChannel});
-      console.table(this.codeChannels);
     }
 
     @Input(EventName.LEAVE_CODE_CHANNEL)
@@ -264,6 +263,16 @@ export class CodeChannelSocketService{
       }
     }
 
+
+    @Input(EventName.GET_DRIVER)
+    eventGetDriver(
+      @Args(0) codeChannelID: string,
+      @Socket socket: Socket,
+      @SocketSession session: SocketSession
+    ): void{
+       socket.emit(ResponseEventName.DRIVER, this.getDriver(codeChannelID));
+    }
+
     changeDriver(codeChannelID: string, newdriverID: string): void {
       if(this.drivers.has(codeChannelID)){
         this.drivers.set(codeChannelID, newdriverID);
@@ -299,7 +308,6 @@ export class CodeChannelSocketService{
     }
 
     public getDriver(codeChannelID: string): string{
-      
       if (this.drivers.has(codeChannelID)) {
         return this.drivers.get(codeChannelID)!;
       }
