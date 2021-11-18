@@ -127,6 +127,10 @@ export class CodeChannelSocketService{
             console.log("Usuario eliminado");
           }
           this.nsp.to(currentCodeChannel).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(currentCodeChannel));
+         codeChannel.forEach((v,k,m) => {
+            this.changeDriver(currentCodeChannel,k);
+            return;
+          });
           if(codeChannel.size === 0){
             if(this.codeChannels.delete(currentCodeChannel)){
               console.log("Code channel cerrado");
