@@ -37,7 +37,8 @@ export class CodeChannelSocketService{
       if(socket.handshake.auth){
         session.set("user", <User>{
           socketID: socket.id,
-          uid: socket.handshake.auth.uid
+          uid: socket.handshake.auth.uid,
+          connectionDate: new Date()
         });
         socket.join(socket.handshake.auth.uid)
       }
@@ -114,6 +115,7 @@ export class CodeChannelSocketService{
        @SocketSession session: SocketSession,
        @Socket socket: Socket
     ): void {
+
       this.leaveRoom(session,socket);
     }
 
@@ -127,10 +129,23 @@ export class CodeChannelSocketService{
             console.log("Usuario eliminado");
           }
           this.nsp.to(currentCodeChannel).emit(ResponseEventName.CODE_ALL_USERS,this.getUsersInCodeChannel(currentCodeChannel));
+          var users: User[] = [];
          codeChannel.forEach((v,k,m) => {
-            this.changeDriver(currentCodeChannel,k);
-            return;
+            users.push(v);
           });
+
+          users.sort((a,b)=>{
+            const sort = 0
+            if (a.connectionDate && b.connectionDate) {
+              const dates = a.connectionDate.getTime() - b.connectionDate.getTime();
+              return dates;
+            }
+            return sort
+          });
+          if(users[0]){
+            this.changeDriver(currentCodeChannel, users[0].uid)
+          }
+          
           if(codeChannel.size === 0){
             if(this.codeChannels.delete(currentCodeChannel)){
               console.log("Code channel cerrado");
