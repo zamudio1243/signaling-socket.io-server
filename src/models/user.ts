@@ -9,5 +9,6 @@
     uid: string;
     currentVoiceChannel?: string;
     currentCodeChannel?: string;
+    connectionDate?: Date
 }
   
