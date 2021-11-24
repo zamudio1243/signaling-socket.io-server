@@ -11,6 +11,7 @@ export enum EventName {
   ACCEPT_REQUEST = 'accpet-request',
   GET_DRIVER = 'get-driver',
 
+
   //VoiceChannel
   JOIN_VOICE_CHANNEL = 'join-voice-channel',
   LEAVE_VOICE_CHANNEL = 'leave-voice-channel',
@@ -18,4 +19,5 @@ export enum EventName {
   RETURNING_SIGNAL = 'returning-signal',
   EMIT_USERS = 'emit-users',
   JOIN_ROOM = 'join-room',
+  
 }
