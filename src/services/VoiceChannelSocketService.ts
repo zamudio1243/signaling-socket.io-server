@@ -1,5 +1,5 @@
 
-import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args, Emit} from "@tsed/socketio";
+import {Nsp, Socket, SocketService, SocketSession, Namespace, Input, Args} from "@tsed/socketio";
 import { SignalPayload } from "../models/signal_payload";
 import { User } from "../models/user";
 import { EventName } from "../utils/event_name";
@@ -58,28 +58,27 @@ export class VoiceChannelSocketService{
      * @returns Usuarios dentro del canal de voz
      */
     @Input(EventName.JOIN_VOICE_CHANNEL)
-    @Emit(ResponseEventName.JOINED_USERS)
     joinVoiceChannel(
        @Args(0) voiceChannelID: string,
        @SocketSession session: SocketSession,
        @Socket socket: Socket
     ): any {
       this.joinSocketToVoiceChannel(voiceChannelID,session,socket);
-      return this.getUsersInVoiceChannel(voiceChannelID);
+      this.nsp.to(voiceChannelID).emit(`${ResponseEventName.JOINED_USERS}-${voiceChannelID}`, this.getUsersInVoiceChannel(voiceChannelID))
     }
 
-    joinSocketToVoiceChannel(
+    async joinSocketToVoiceChannel(
       voiceChannelID: string,
       session: SocketSession,
       socket: Socket
-    ): void {
+    ): Promise<void> {
       const user: User = session.get("user");      
 
       if( user.currentVoiceChannel === voiceChannelID) return;
 
       const voiceChannel = this.voiceChannels.get(voiceChannelID);
       if(user.currentVoiceChannel){
-        this.leaveRoom(session,socket);
+        await this.leaveRoom(session,socket);
       }
       if(voiceChannel){
         voiceChannel.set(user.uid, user);
@@ -100,14 +99,14 @@ export class VoiceChannelSocketService{
     }
 
     @Input(EventName.LEAVE_VOICE_CHANNEL)
-    leaveVoiceChannel(
+    async leaveVoiceChannel(
        @SocketSession session: SocketSession,
        @Socket socket: Socket
-    ): void {
-      this.leaveRoom(session,socket);
+    ): Promise<void> {
+      await this.leaveRoom(session,socket);
     }
 
-    leaveRoom(session: SocketSession, socket: Socket){
+    async leaveRoom(session: SocketSession, socket: Socket): Promise<void>{
       const user: User = session.get("user");
       if(user.currentVoiceChannel){
         const voiceChannel = this.voiceChannels.get(user.currentVoiceChannel);
@@ -121,10 +120,14 @@ export class VoiceChannelSocketService{
               console.log("Voice channel cerrado");
             }
           }
-          socket.leave(user.currentVoiceChannel);
+          await socket.leave(user.currentVoiceChannel);
+          console.log('dejo ', user.currentVoiceChannel);
+          
           user.currentVoiceChannel= undefined;
           socket.emit(ResponseEventName.USER_STATUS,{});
           this.nsp.to(user.uid).emit(ResponseEventName.USER_STATUS,{});
+          console.log(this.voiceChannels);
+          
         }
       }
     }
