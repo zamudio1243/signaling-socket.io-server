@@ -127,6 +127,19 @@ export class CodeChannelSocketService {
     socket.emit(ResponseEventName.CODE_USER_STATUS, {
       channelID: user.currentCodeChannel,
     });
+    socket
+      .to(codeChannelID)
+      .emit(ResponseEventName.CODE, this.getDatafromCodeChannel(codeChannelID));
+  }
+
+  @Input(EventName.REQUEST_CODE)
+  @Emit(ResponseEventName.CODE)
+  requestCode(
+    @Args(0) channelID: string,
+    @SocketSession session: SocketSession,
+    @Socket socket: Socket
+  ): Code {
+    return this.getDatafromCodeChannel(channelID);
   }
 
   @Input(EventName.LEAVE_CODE_CHANNEL)
@@ -146,6 +159,7 @@ export class CodeChannelSocketService {
         if (codeChannel.delete(user.uid)) {
           console.log("Usuario eliminado");
         }
+        console.table(codeChannel);
         this.nsp
           .to(currentCodeChannel)
           .emit(
@@ -175,6 +189,12 @@ export class CodeChannelSocketService {
         if (codeChannel.size === 0) {
           if (this.codeChannels.delete(currentCodeChannel)) {
             console.log("Code channel cerrado");
+          }
+          if (this.code.delete(currentCodeChannel)) {
+            console.log("Info eliminada");
+          }
+          if (this.drivers.delete(currentCodeChannel)) {
+            console.log("Driver eliminado");
           }
         }
         user.currentCodeChannel = undefined;
@@ -279,25 +299,27 @@ export class CodeChannelSocketService {
       return;
     }
     if (currentCodeChannel) {
-      let code: Code | undefined = undefined
-      if(this.code.has(currentCodeChannel) && codeData.path === this.code.get(currentCodeChannel)?.path){
-        code = <Code> {
+      let code: Code | undefined = undefined;
+      if (
+        this.code.has(currentCodeChannel) &&
+        codeData.path === this.code.get(currentCodeChannel)?.path
+      ) {
+        code = <Code>{
           ...this.code.get(currentCodeChannel),
           currentHash: this.getCodeHash(codeData.code),
           data: codeData.code,
           extension: codeData.extension,
-        }
-      }
-      else{
+        };
+      } else {
         code = <Code>{
           data: codeData.code,
           extension: codeData.extension,
           hash: this.getCodeHash(codeData.code),
           currentHash: this.getCodeHash(codeData.code),
-          path: codeData.path
-        }
+          path: codeData.path,
+        };
       }
-      
+
       this.code.set(codeData.channelID, code);
       this.nsp
         .to(codeData.channelID)
@@ -362,9 +384,10 @@ export class CodeChannelSocketService {
 
   getDatafromCodeChannel(codeChannelID: string): Code {
     if (this.code.has(codeChannelID)) {
+     
       return this.code.get(codeChannelID)!;
     } else {
-      return { data: "", extension: "", hash: "", currentHash: "", path: ""};
+      return { data: "", extension: "", hash: "", currentHash: "", path: "" };
     }
   }
 
