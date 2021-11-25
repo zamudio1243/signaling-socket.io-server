@@ -10,6 +10,7 @@ export enum EventName {
   REQUEST_DRIVER = 'request-driver',
   ACCEPT_REQUEST = 'accpet-request',
   GET_DRIVER = 'get-driver',
+  REQUEST_CODE = 'REQUEST_CODE',
 
 
   //VoiceChannel
