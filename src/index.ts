@@ -12,6 +12,7 @@ async function bootstrap() {
     await platform.listen();
     $log.debug("Server initialized");
 
+    
 
   } catch (er) {
     $log.error(er);
