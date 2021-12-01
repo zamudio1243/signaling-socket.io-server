@@ -34,7 +34,6 @@ export class VoiceChannelSocketService {
    * Triggered when a new client connects to the Namespace.
    */
   $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
-    console.log("New connection in voice channel, ID =>", socket.id);
     if (socket.handshake.auth) {
       session.set("user", <User>{
         socketID: socket.id,
@@ -69,7 +68,7 @@ export class VoiceChannelSocketService {
     @Socket socket: Socket
   ): any {
     this.joinSocketToVoiceChannel(voiceChannelID, session, socket);
-    this.nsp
+    socket
       .to(voiceChannelID)
       .emit(
         `${ResponseEventName.JOINED_USERS}-${voiceChannelID}`,
@@ -83,13 +82,12 @@ export class VoiceChannelSocketService {
     socket: Socket
   ): Promise<void> {
     const user: User = session.get("user");
-    const userVoiceChannel = this.getVoiceChannelIdFromUser(user.uid)
+    const userVoiceChannel = this.getVoiceChannelIdFromUser(user.uid);
 
     if (userVoiceChannel === voiceChannelID) return;
 
     const voiceChannel = this.voiceChannels.get(voiceChannelID);
-    
-    
+
     if (userVoiceChannel) {
       await this.leaveRoom(session, socket);
     }
@@ -113,6 +111,7 @@ export class VoiceChannelSocketService {
     this.nsp.to(user.uid).emit(ResponseEventName.USER_STATUS, {
       channelID: user.currentVoiceChannel,
     });
+    console.table(this.getUsersInVoiceChannel(voiceChannelID));
   }
 
   @Input(EventName.LEAVE_VOICE_CHANNEL)
@@ -127,7 +126,6 @@ export class VoiceChannelSocketService {
     const user: User = session.get("user");
     const userVoiceChannel = this.getVoiceChannelIdFromUser(user.uid);
     console.log(`se desconecto de ${userVoiceChannel}`);
-    
 
     if (userVoiceChannel) {
       const voiceChannel = this.voiceChannels.get(userVoiceChannel);
@@ -154,20 +152,6 @@ export class VoiceChannelSocketService {
     }
   }
 
-  @Input(EventName.SENDING_SIGNAL)
-  sendingSignal(
-    @Args(0) payload: SignalPayload,
-    @SocketSession session: SocketSession
-  ): void {
-    const user: User = session.get("user");
-    console.log(
-      `${user.uid} esta enviando su señal a ${payload.userIDToSignal}`
-    );
-    this.nsp
-      .to(payload.userIDToSignal!)
-      .emit(ResponseEventName.USER_JOINED, payload);
-  }
-
   @Input(EventName.JOIN_ROOM)
   joinRoom(@Args(0) voiceChannelID: string, @Socket socket: Socket): void {
     this.joinSocketToRoom(voiceChannelID, socket);
@@ -177,17 +161,40 @@ export class VoiceChannelSocketService {
     socket.join(voiceChannelID);
   }
 
-  @Input(EventName.RETURNING_SIGNAL)
-  returningSignal(
+  @Input(EventName.SENDING_SIGNAL)
+  sendingSignal(
     @Args(0) payload: SignalPayload,
+    @Socket socket: Socket,
     @SocketSession session: SocketSession
   ): void {
     const user: User = session.get("user");
-    console.log(`${user.uid} esta retornando su señal a ${payload.callerID}`);
+    const voiceChannel = this.getVoiceChannelIdFromUser(user.uid);
+    // console.log(
+    //   `${user.uid} (${socket.id}) esta enviando su señal a ${payload.userIDToSignal}`
+    // );
+    this.nsp
+      .to(payload.userIDToSignal!)
+      .emit(`${ResponseEventName.USER_JOINED}-${voiceChannel}`, payload);
+  }
+
+  @Input(EventName.RETURNING_SIGNAL)
+  returningSignal(
+    @Args(0) payload: SignalPayload,
+    @Socket socket: Socket,
+    @SocketSession session: SocketSession
+  ): void {
+    const user: User = session.get("user");
+    const voiceChannel = this.getVoiceChannelIdFromUser(user.uid);
+    // console.log(
+    //   `${user.uid} (${socket.id}) esta retornando su señal a ${payload.callerID}`
+    // );
     payload.userIDToSignal = user.uid;
     this.nsp
       .to(payload.callerID)
-      .emit(ResponseEventName.RECEIVING_RETURNED_SIGNAL, payload);
+      .emit(
+        `${ResponseEventName.RECEIVING_RETURNED_SIGNAL}-${voiceChannel}`,
+        payload
+      );
   }
 
   @Input(EventName.EMIT_USERS)

@@ -48,7 +48,6 @@ export class CodeChannelSocketService {
    * Triggered when a new client connects to the Namespace.
    */
   $onConnection(@Socket socket: Socket, @SocketSession session: SocketSession) {
-    console.log("New connection in code channel, ID =>", socket.id);
     if (socket.handshake.auth) {
       session.set("user", <User>{
         socketID: socket.id,
@@ -130,6 +129,8 @@ export class CodeChannelSocketService {
     socket
       .to(codeChannelID)
       .emit(ResponseEventName.CODE, this.getDatafromCodeChannel(codeChannelID));
+    
+    console.table(this.getDatafromCodeChannel(codeChannelID))
   }
 
   @Input(EventName.REQUEST_CODE)
