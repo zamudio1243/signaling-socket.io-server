@@ -10,7 +10,7 @@ export enum EventName {
   REQUEST_DRIVER = 'request-driver',
   ACCEPT_REQUEST = 'accpet-request',
   GET_DRIVER = 'get-driver',
-  REQUEST_CODE = 'REQUEST_CODE',
+  REQUEST_CODE = 'request-code',
 
 
   //VoiceChannel
@@ -20,5 +20,5 @@ export enum EventName {
   RETURNING_SIGNAL = 'returning-signal',
   EMIT_USERS = 'emit-users',
   JOIN_ROOM = 'join-room',
-  
+  MUTE_USER = "mute-user",
 }

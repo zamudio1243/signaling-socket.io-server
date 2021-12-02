@@ -125,8 +125,6 @@ export class VoiceChannelSocketService {
   async leaveRoom(session: SocketSession, socket: Socket): Promise<void> {
     const user: User = session.get("user");
     const userVoiceChannel = this.getVoiceChannelIdFromUser(user.uid);
-    console.log(`se desconecto de ${userVoiceChannel}`);
-
     if (userVoiceChannel) {
       const voiceChannel = this.voiceChannels.get(userVoiceChannel);
       if (voiceChannel) {
@@ -211,6 +209,23 @@ export class VoiceChannelSocketService {
       ResponseEventName.ALL_USERS,
       this.getUsersInVoiceChannel(voiceChannelID)
     );
+  }
+
+  @Input(EventName.MUTE_USER)
+  muteUser(
+    @Args(0)
+    payload: {
+      uidUserToMute: string;
+      mute: boolean;
+    },
+    @Socket socket: Socket,
+    @SocketSession session: SocketSession
+  ): void {
+    console.log('quieren mutear a', payload.uidUserToMute);
+    
+    socket
+      .to(payload.uidUserToMute)
+      .emit(ResponseEventName.TOGGLE_MUTE, payload.mute);
   }
 
   public getVoiceChannelIdFromUser(userID: string): string {
