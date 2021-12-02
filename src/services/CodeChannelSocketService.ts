@@ -52,7 +52,6 @@ export class CodeChannelSocketService {
       session.set("user", <User>{
         socketID: socket.id,
         uid: socket.handshake.auth.uid,
-        connectionDate: new Date(),
       });
       socket.join(socket.handshake.auth.uid);
     } else {
@@ -93,12 +92,19 @@ export class CodeChannelSocketService {
     socket: Socket
   ): Promise<void> {
     const user: User = session.get("user");
+    const userCodeChannel = this.getCodeChannelIdFromUser(user.uid);
+    console.log(
+      "user: ",
+      user.uid,
+      "se conecto se quiere conectar a ",
+      codeChannelID
+    );
 
-    if (user.currentCodeChannel === codeChannelID) return;
+    if (userCodeChannel === codeChannelID) return;
 
     const codeChannel = this.codeChannels.get(codeChannelID);
 
-    if (codeChannel) {
+    if (userCodeChannel) {
       await this.leaveRoom(session, socket);
     }
     if (codeChannel) {
@@ -108,35 +114,47 @@ export class CodeChannelSocketService {
         codeChannelID,
         new Map<string, User>([[user.uid, user]])
       );
-      const driversStack = this.drivers.get(codeChannelID);
-
-      if (driversStack) {
-        driversStack.push(user.uid);
-        this.drivers.set(codeChannelID, driversStack);
-      }
-      else{
-        this.drivers.set(codeChannelID, [user.uid]);
-      }
     }
+
+    const driversStack = this.drivers.get(codeChannelID);
+
+    if (driversStack) {
+      console.log("entro el if");
+
+      driversStack.push(user.uid);
+      this.drivers.set(codeChannelID, driversStack);
+    } else {
+      console.log("al else");
+      this.drivers.set(codeChannelID, [user.uid]);
+    }
+
     user.currentCodeChannel = codeChannelID;
     socket.join(codeChannelID);
+
     this.nsp
       .to(codeChannelID)
       .emit(
         ResponseEventName.CODE_ALL_USERS,
         this.getUsersInCodeChannel(codeChannelID)
       );
-    this.nsp
-      .to(codeChannelID)
-      .emit(ResponseEventName.DRIVER, this.getDriver(codeChannelID));
-    socket.emit(ResponseEventName.CODE_USER_STATUS, {
-      channelID: user.currentCodeChannel,
+
+      console.log('status',{
+        channelID: codeChannelID,
+      });
+      
+    this.nsp.to(user.uid).emit(ResponseEventName.CODE_USER_STATUS, {
+      channelID:  codeChannelID,
     });
     socket
       .to(codeChannelID)
       .emit(ResponseEventName.CODE, this.getDatafromCodeChannel(codeChannelID));
 
-    console.table(this.drivers)
+    this.nsp
+      .to(codeChannelID)
+      .emit(ResponseEventName.DRIVER, this.getDriver(codeChannelID));
+
+    console.table(this.getUsersInCodeChannel(codeChannelID));
+    console.table(this.drivers);
   }
 
   @Input(EventName.REQUEST_CODE)
@@ -159,8 +177,8 @@ export class CodeChannelSocketService {
 
   async leaveRoom(session: SocketSession, socket: Socket) {
     const user: User = session.get("user");
-    const currentCodeChannel = user.currentCodeChannel;
-    console.log("codechannel", currentCodeChannel);
+    const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
+    console.log("user: ", user.uid, "se desconecto de ", currentCodeChannel);
     if (currentCodeChannel) {
       const codeChannel = this.codeChannels.get(currentCodeChannel);
 
@@ -223,8 +241,9 @@ export class CodeChannelSocketService {
     @SocketSession session: SocketSession
   ): void {
     const user: User = session.get("user");
+    const userCurrentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
     socket.emit(ResponseEventName.CODE_USER_STATUS, {
-      channelID: user.currentCodeChannel,
+      channelID: userCurrentCodeChannel,
     });
     socket.emit(
       ResponseEventName.CODE_ALL_USERS,
@@ -258,10 +277,9 @@ export class CodeChannelSocketService {
     socket: Socket
   ): void {
     const user: User = session.get("user");
-    if (this.cursorPointers.has(user.currentCodeChannel!)) {
-      const currentCoordinates = this.cursorPointers.get(
-        user.currentCodeChannel!
-      );
+    const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
+    if (this.cursorPointers.has(currentCodeChannel)) {
+      const currentCoordinates = this.cursorPointers.get(currentCodeChannel);
       const cursorCoordinates = currentCoordinates?.find((cursor) => {
         return cursor.userID === coordinates.userID;
       });
@@ -273,10 +291,10 @@ export class CodeChannelSocketService {
         currentCoordinates?.push(coordinates);
       }
     } else {
-      this.cursorPointers.set(user.currentCodeChannel!, [coordinates]);
+      this.cursorPointers.set(currentCodeChannel, [coordinates]);
     }
-    if (user.currentCodeChannel) {
-      const channel = user.currentCodeChannel;
+    if (currentCodeChannel) {
+      const channel = currentCodeChannel;
       this.nsp
         .to(channel)
         .emit(ResponseEventName.COORDINAES, this.cursorPointers.get(channel));
@@ -296,7 +314,7 @@ export class CodeChannelSocketService {
     @SocketSession session: SocketSession
   ): void {
     const user: User = session.get("user");
-    const currentCodeChannel = user.currentCodeChannel;
+    const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
 
     if (this.drivers.get(currentCodeChannel!)![0] !== user.uid) {
       return;
@@ -348,9 +366,10 @@ export class CodeChannelSocketService {
 
   requestDriver(socket: Socket, session: SocketSession): void {
     const user: User = session.get("user");
-    if (user.currentCodeChannel) {
+    const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
+    if (currentCodeChannel) {
       socket
-        .to(this.getDriver(user.currentCodeChannel))
+        .to(this.getDriver(currentCodeChannel))
         .emit(ResponseEventName.REQUEST_FROM_NAV, user.uid);
     }
   }
@@ -362,8 +381,9 @@ export class CodeChannelSocketService {
     @SocketSession session: SocketSession
   ): void {
     const user: User = session.get("user");
-    if (user.currentCodeChannel) {
-      this.changeDriver(user.currentCodeChannel, newdriverID);
+    const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
+    if (currentCodeChannel) {
+      this.changeDriver(currentCodeChannel, newdriverID);
     }
   }
 
@@ -393,6 +413,19 @@ export class CodeChannelSocketService {
     } else {
       return { data: "", extension: "", hash: "", currentHash: "", path: "" };
     }
+  }
+
+  public getCodeChannelIdFromUser(userID: string): string {
+    let codeChannel = "";
+    this.codeChannels.forEach((v, k) => {
+      const key = k;
+      v.forEach((v, k) => {
+        if (userID === k) {
+          codeChannel = key;
+        }
+      });
+    });
+    return codeChannel;
   }
 
   /**
