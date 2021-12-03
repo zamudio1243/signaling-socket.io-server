@@ -167,9 +167,6 @@ export class VoiceChannelSocketService {
   ): void {
     const user: User = session.get("user");
     const voiceChannel = this.getVoiceChannelIdFromUser(user.uid);
-    console.log(
-      `${user.uid} (${socket.id}) esta enviando su señal a ${payload.userIDToSignal}`
-    );
     socket
       .to(payload.userIDToSignal!)
       .emit(`${ResponseEventName.USER_JOINED}-${voiceChannel}`, payload);
@@ -183,9 +180,6 @@ export class VoiceChannelSocketService {
   ): void {
     const user: User = session.get("user");
     const voiceChannel = this.getVoiceChannelIdFromUser(user.uid);
-    console.log(
-      `${user.uid} (${socket.id}) esta retornando su señal a ${payload.callerID}`
-    );
     payload.userIDToSignal = user.uid;
     socket
       .to(payload.callerID)
@@ -211,21 +205,22 @@ export class VoiceChannelSocketService {
     );
   }
 
-  @Input(EventName.MUTE_USER)
+  @Input(EventName.ACTION_USER)
   muteUser(
     @Args(0)
     payload: {
       uidUserToMute: string;
-      mute: boolean;
+      actions: {
+        mute?: boolean;
+        disconnect?: boolean;
+      };
     },
     @Socket socket: Socket,
     @SocketSession session: SocketSession
   ): void {
-    console.log('quieren mutear a', payload.uidUserToMute);
-    
     socket
       .to(payload.uidUserToMute)
-      .emit(ResponseEventName.TOGGLE_MUTE, payload.mute);
+      .emit(ResponseEventName.ACTIONS, payload.actions);
   }
 
   public getVoiceChannelIdFromUser(userID: string): string {
