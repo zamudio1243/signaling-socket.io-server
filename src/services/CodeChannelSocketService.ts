@@ -138,17 +138,19 @@ export class CodeChannelSocketService {
         this.getUsersInCodeChannel(codeChannelID)
       );
 
-      console.log('status',{
-        channelID: codeChannelID,
-      });
-      
+    // console.log('status',{
+    //   channelID: codeChannelID,
+    // });
+
     this.nsp.to(user.uid).emit(ResponseEventName.CODE_USER_STATUS, {
-      channelID:  codeChannelID,
+      channelID: codeChannelID,
     });
     socket
       .to(codeChannelID)
       .emit(ResponseEventName.CODE, this.getDatafromCodeChannel(codeChannelID));
 
+    console.log('el driver deberia ser',  this.getDriver(codeChannelID));
+    
     this.nsp
       .to(codeChannelID)
       .emit(ResponseEventName.DRIVER, this.getDriver(codeChannelID));
