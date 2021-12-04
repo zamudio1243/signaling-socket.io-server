@@ -15,5 +15,6 @@ export enum ResponseEventName {
   USER_STATUS = 'user-status',
   RECEIVING_RETURNED_SIGNAL = 'receiving returned signal',
   USER_JOINED = 'user-joined',
-  ACTIONS = 'actions'
+  ACTIONS = 'actions',
+  COMPILE_DATA = "COMPILE_DATA"
 }

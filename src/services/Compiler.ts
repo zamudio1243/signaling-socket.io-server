@@ -1,13 +1,13 @@
 import { BodyParams, Controller, Post } from "@tsed/common";
 import { ContentType } from "@tsed/schema";
-import * as axios from "axios";
+import axios from "axios";
 
 @Controller("/compiler")
 export class Compiler {
   @Post()
   @ContentType("json")
   async compile(@BodyParams() params?: any) {
-    return (await axios.default.post(
+    return (await axios.post(
       "https://api.jdoodle.com/v1/execute",
       {
         ...params,
