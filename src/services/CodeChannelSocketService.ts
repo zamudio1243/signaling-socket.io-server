@@ -79,7 +79,7 @@ export class CodeChannelSocketService {
   ){
     assert(params?.codeChannelID, "Enviar el codeChannelID");
 
-    this.nsp.to(params.codeChannelID).emit(ResponseEventName.COMPILE_DATA, this.compiler.compile(params));
+    this.nsp.to(params.codeChannelID).emit(ResponseEventName.COMPILE_DATA, await this.compiler.compile(params));
   }
 
   /**
