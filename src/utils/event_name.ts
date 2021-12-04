@@ -21,4 +21,5 @@ export enum EventName {
   EMIT_USERS = 'emit-users',
   JOIN_ROOM = 'join-room',
   ACTION_USER = 'action-user',
+  COMPILE_CODE = "COMPILE_CODE"
 }

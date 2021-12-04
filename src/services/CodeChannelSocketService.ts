@@ -14,10 +14,14 @@ import sha256 from "crypto-js/sha256";
 import { EventName } from "../utils/event_name";
 import { ResponseEventName } from "../utils/response_event_name";
 import { Code } from "../models/code";
+import assert from "assert";
+import { Compiler } from "./Compiler";
 
 @SocketService("/codeChannel")
 export class CodeChannelSocketService {
   @Nsp nsp!: Namespace;
+
+  private compiler = new Compiler();
 
   /**
    * ['codeChannelID' => ['uid' => 'User']]
@@ -67,6 +71,15 @@ export class CodeChannelSocketService {
   $onDisconnect(@SocketSession session: SocketSession, @Socket socket: Socket) {
     this.leaveRoom(session, socket);
     console.table(this.codeChannels);
+  }
+
+  @Input(EventName.COMPILE_CODE)
+  async compile(
+    @Args(0) params: any
+  ){
+    assert(params?.codeChannelID, "Enviar el codeChannelID");
+
+    this.nsp.to(params.codeChannelID).emit(ResponseEventName.COMPILE_DATA, this.compiler.compile(params));
   }
 
   /**
