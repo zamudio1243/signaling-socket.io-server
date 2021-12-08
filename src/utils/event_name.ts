@@ -11,7 +11,7 @@ export enum EventName {
   ACCEPT_REQUEST = 'accpet-request',
   GET_DRIVER = 'get-driver',
   REQUEST_CODE = 'request-code',
-
+  COMPILE_CODE = 'compile-code',
 
   //VoiceChannel
   JOIN_VOICE_CHANNEL = 'join-voice-channel',
@@ -21,5 +21,5 @@ export enum EventName {
   EMIT_USERS = 'emit-users',
   JOIN_ROOM = 'join-room',
   ACTION_USER = 'action-user',
-  COMPILE_CODE = "COMPILE_CODE"
+  
 }

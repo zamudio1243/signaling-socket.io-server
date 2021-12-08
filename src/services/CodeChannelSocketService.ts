@@ -74,12 +74,15 @@ export class CodeChannelSocketService {
   }
 
   @Input(EventName.COMPILE_CODE)
-  async compile(
-    @Args(0) params: any
-  ){
+  async compile(@Args(0) params: any) {
     assert(params?.codeChannelID, "Enviar el codeChannelID");
 
-    this.nsp.to(params.codeChannelID).emit(ResponseEventName.COMPILE_DATA, await this.compiler.compile(params));
+    this.nsp
+      .to(params.codeChannelID)
+      .emit(
+        ResponseEventName.COMPILE_DATA,
+        await this.compiler.compile(params)
+      );
   }
 
   /**
@@ -132,12 +135,9 @@ export class CodeChannelSocketService {
     const driversStack = this.drivers.get(codeChannelID);
 
     if (driversStack) {
-      console.log("entro el if");
-
       driversStack.push(user.uid);
       this.drivers.set(codeChannelID, driversStack);
     } else {
-      console.log("al else");
       this.drivers.set(codeChannelID, [user.uid]);
     }
 
@@ -151,35 +151,32 @@ export class CodeChannelSocketService {
         this.getUsersInCodeChannel(codeChannelID)
       );
 
-    // console.log('status',{
-    //   channelID: codeChannelID,
-    // });
-
     this.nsp.to(user.uid).emit(ResponseEventName.CODE_USER_STATUS, {
       channelID: codeChannelID,
     });
-    socket
-      .to(codeChannelID)
-      .emit(ResponseEventName.CODE, this.getDatafromCodeChannel(codeChannelID));
+    this.nsp.emit(
+      `${ResponseEventName.CODE}-${codeChannelID}`,
+      this.getDatafromCodeChannel(codeChannelID)
+    );
 
-    console.log('el driver deberia ser',  this.getDriver(codeChannelID));
-    
+
     this.nsp
       .to(codeChannelID)
       .emit(ResponseEventName.DRIVER, this.getDriver(codeChannelID));
 
     console.table(this.getUsersInCodeChannel(codeChannelID));
-    console.table(this.drivers);
   }
 
   @Input(EventName.REQUEST_CODE)
-  @Emit(ResponseEventName.CODE)
   requestCode(
     @Args(0) channelID: string,
     @SocketSession session: SocketSession,
     @Socket socket: Socket
-  ): Code {
-    return this.getDatafromCodeChannel(channelID);
+  ): void {
+    this.nsp.emit(
+      `${ResponseEventName.CODE}-${channelID}`,
+      this.getDatafromCodeChannel(channelID)
+    );
   }
 
   @Input(EventName.LEAVE_CODE_CHANNEL)
@@ -193,7 +190,6 @@ export class CodeChannelSocketService {
   async leaveRoom(session: SocketSession, socket: Socket) {
     const user: User = session.get("user");
     const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
-    console.log("user: ", user.uid, "se desconecto de ", currentCodeChannel);
     if (currentCodeChannel) {
       const codeChannel = this.codeChannels.get(currentCodeChannel);
 
@@ -229,8 +225,6 @@ export class CodeChannelSocketService {
             console.log("Drivers eliminado");
           }
         }
-        console.log(socket.id);
-
         await socket.leave(currentCodeChannel);
         user.currentCodeChannel = undefined;
         //socket.emit(ResponseEventName.CODE_USER_STATUS, {});
@@ -330,10 +324,13 @@ export class CodeChannelSocketService {
   ): void {
     const user: User = session.get("user");
     const currentCodeChannel = this.getCodeChannelIdFromUser(user.uid);
-
-    if (this.drivers.get(currentCodeChannel!)![0] !== user.uid) {
-      return;
+    const drivers = this.drivers.get(currentCodeChannel);
+    if (drivers) {
+      if (drivers[0] !== user.uid) {
+        return;
+      }
     }
+
     if (currentCodeChannel) {
       let code: Code | undefined = undefined;
       if (
@@ -357,12 +354,10 @@ export class CodeChannelSocketService {
       }
 
       this.code.set(codeData.channelID, code);
-      this.nsp
-        .to(codeData.channelID)
-        .emit(
-          ResponseEventName.CODE,
-          this.getDatafromCodeChannel(codeData.channelID)
-        );
+      this.nsp.emit(
+        `${ResponseEventName.CODE}-${codeData.channelID}`,
+        this.getDatafromCodeChannel(codeData.channelID)
+      );
     }
   }
 

@@ -8,6 +8,7 @@ export enum ResponseEventName {
   CODE = 'code',
   DRIVER = 'driver',
   REQUEST_FROM_NAV = 'request-from-nav',
+  COMPILE_DATA = 'compile-data',
 
   //VoiceChannel
   JOINED_USERS = 'joined-users',
@@ -16,5 +17,4 @@ export enum ResponseEventName {
   RECEIVING_RETURNED_SIGNAL = 'receiving returned signal',
   USER_JOINED = 'user-joined',
   ACTIONS = 'actions',
-  COMPILE_DATA = "COMPILE_DATA"
 }
